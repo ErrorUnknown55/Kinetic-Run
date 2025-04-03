@@ -1,9 +1,11 @@
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.Font;
 import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.GridLayout;
 import javax.swing.*;
 
 public class GameWindow extends JFrame {
@@ -31,15 +33,57 @@ public class GameWindow extends JFrame {
         mainPanel.setLayout(new BorderLayout());
         add(mainPanel);
 
+        //Game Title
         JLabel titleJLabel =  new JLabel("KINETIC RUN", SwingConstants.CENTER);
         titleJLabel.setFont(new Font("Arial", Font.BOLD, 48));
         titleJLabel.setForeground(Color.WHITE);
         titleJLabel.setBorder(BorderFactory.createEmptyBorder(50, 0, 100, 0));
         mainPanel.add(titleJLabel, BorderLayout.NORTH);
 
+        //Button Panel
+        JPanel buttonPanel =  new JPanel();
+        buttonPanel.setOpaque(false);
+        buttonPanel.setLayout(new GridLayout(2, 1, 0, 30));
+        buttonPanel.setBorder(BorderFactory.createEmptyBorder(0, 250, 250, 250));
+
+        JButton playBtn = createButtonStyle("PLAY");
+        JButton settingBtn = createButtonStyle("SETTING");
+
+
+        buttonPanel.add(playBtn);
+        buttonPanel.add(settingBtn);
+        mainPanel.add(buttonPanel, BorderLayout.CENTER);
+
+
+
         setLocationRelativeTo(null);//Center the window
         setResizable(false);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setVisible(true);
-    }  
+    }
+
+    
+    private JButton createButtonStyle(String text) {
+
+        JButton button = new  JButton(text);
+        button.setFont(new Font("Arial", Font.BOLD, 25));
+        button.setForeground(Color.WHITE);
+        button.setBackground(new Color(70, 130, 180));//Steel Blue
+        button.setFocusPainted(false);
+        button.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        //Hover effect
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setBackground(new Color(100, 150, 200));
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setBackground(new Color(70, 130, 180));
+            }
+        });
+        return button;
+    }
+
 }
