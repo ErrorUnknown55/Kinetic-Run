@@ -9,6 +9,10 @@ import java.awt.GridLayout;
 import javax.swing.*;
 
 public class GameWindow extends JFrame {
+
+    private GamePanel gamePanel;
+
+    int scrWidth = 700, scrHeight= 650;
     
     public GameWindow() {
         //Set Game Title
@@ -16,6 +20,8 @@ public class GameWindow extends JFrame {
         
         //Set Panel Size
         setSize(700,650);
+
+        gamePanel = new GamePanel(700,650);
 
         //Creates a custom background for the mainPanel
         JPanel mainPanel =  new JPanel() {
@@ -43,15 +49,36 @@ public class GameWindow extends JFrame {
         //Button Panel
         JPanel buttonPanel =  new JPanel();
         buttonPanel.setOpaque(false);
-        buttonPanel.setLayout(new GridLayout(2, 1, 0, 30));
+        buttonPanel.setLayout(new GridLayout(3, 1, 0, 30));
         buttonPanel.setBorder(BorderFactory.createEmptyBorder(0, 250, 250, 250));
 
+        //Play button
         JButton playBtn = createButtonStyle("PLAY");
+        playBtn.addActionListener((actionEvent) -> {
+            //Removes all components from main panel
+            mainPanel.removeAll();
+            //Add the gamePanel
+            mainPanel.add(gamePanel, BorderLayout.CENTER);
+            gamePanel.setVisible(true);
+            gamePanel.startGame();
+            //Refresh the windown
+            revalidate();
+            repaint();
+        });
+        
+        //Setting button 
         JButton settingBtn = createButtonStyle("SETTING");
+        
+        //Exit
+        JButton exitBtn = createButtonStyle("Exit");
+        exitBtn.addActionListener((actionEvent) -> {
+            System.exit(0);
+        });
 
 
         buttonPanel.add(playBtn);
         buttonPanel.add(settingBtn);
+        buttonPanel.add(exitBtn);
         mainPanel.add(buttonPanel, BorderLayout.CENTER);
 
 
@@ -75,10 +102,12 @@ public class GameWindow extends JFrame {
 
         //Hover effect
         button.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
             public void mouseEntered(java.awt.event.MouseEvent evt) {
                 button.setBackground(new Color(100, 150, 200));
             }
 
+            @Override
             public void mouseExited(java.awt.event.MouseEvent evt) {
                 button.setBackground(new Color(70, 130, 180));
             }
