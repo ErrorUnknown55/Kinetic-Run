@@ -1,91 +1,80 @@
-import javax.swing.JPanel;
 import java.awt.Graphics2D;
 import java.awt.Image;
 
 public class Background {
-  	private Image bgImage;
-  	private int bgImageWidth;      		// width of the background (>= panel Width)
+    private GamePanel panel;
 
-	private GamePanel panel;
-
- 	private int bgX;			// X-coordinate of "actual" position
-
-	private int bg1X;			// X-coordinate of first background
-	private int bg2X;			// X-coordinate of second background
-	private int bgDX;			// size of the background move (in pixels)
-
-
-  public Background(GamePanel panel, String imageFile, int bgDX) {
+	private Image bgImage;
+    private int bgImageWidth;//width of the background (>= panel Width)
     
-	this.panel = panel;
-    	this.bgImage = ImageManager.loadImage(imageFile);
-    	bgImageWidth = bgImage.getWidth(null);	// get width of the background
+    private int bg1X;//X-coordinate of first background
+    private int bg2X;//X-coordinate of second background
+    private int bgDX;//size of the background move (in pixels)
 
-	System.out.println ("bgImageWidth = " + bgImageWidth);
+    private boolean autoScroll;//flag for automatic scrolling
+    private int scrollSpeed;//speed of scrolling
 
-	if (bgImageWidth < panel.getWidth())
-      		System.out.println("Background width < panel width");
+    public Background(GamePanel panel, String imageFile, int bgDX) {
+        this.panel = panel;
+        this.bgImage = ImageManager.loadImage(imageFile);
+        bgImageWidth = bgImage.getWidth(null);// get width of the background
 
-    	this.bgDX = 200; // bgDX;
+        this.bgDX = bgDX;
+        this.autoScroll = false;
+        this.scrollSpeed = 6;// default scroll speed
 
-	bgX = 0;
-	bg1X = 0;
-	bg2X = bgImageWidth;
+        bg1X = 0;
+        bg2X = bgImageWidth;
+    }
 
-  }
+    public void setAutoScroll(boolean autoScroll) {
+        this.autoScroll = autoScroll;
+    }
 
+    public void setScrollSpeed(int speed) {
+        this.scrollSpeed = speed;
+    }
 
-  public void move (int direction) {
+    public void update() {
+        if (autoScroll) {
+            moveLeft();
+        }
+    }
 
-	if (direction == 1)
-		moveRight();
-	else
-	if (direction == 2)
-		moveLeft();
-  }
+    public void move(int direction) {
+        if (direction == 1)
+            moveRight();
+        else if (direction == 2)
+            moveLeft();
+    }
 
+    public void moveLeft() {
+        bg1X -= scrollSpeed;
+        bg2X -= scrollSpeed;
 
-  public void moveLeft() {
+        //When the first image is completely off-screen, reset its position
+        if (bg1X + bgImageWidth <= 0) {
+            bg1X = bg2X + bgImageWidth;
+        }
+        
+        //When the second image is completely off-screen, reset its position
+        if (bg2X + bgImageWidth <= 0) {
+            bg2X = bg1X + bgImageWidth;
+        }
+    }
 
-	bgX = bgX - bgDX;
+    public void moveRight() {
+        bg1X += bgDX;
+        bg2X += bgDX;
 
-	bg1X = bg1X - bgDX;
-	bg2X = bg2X - bgDX;
+        if (bg1X > 0) {
+            bg1X = bgImageWidth * -1;
+            bg2X = 0;
+        }
+    }
 
-	String mess = "Moving background left: bgX=" + bgX + " bg1X=" + bg1X + " bg2X=" + bg2X;
-	System.out.println (mess);
-
-	if (bg1X < (bgImageWidth * -1)) {
-		System.out.println ("Background change: bgX = " + bgX); 
-		bg1X = 0;
-		bg2X = bgImageWidth;
-	}
-
-  }
-
-
-  public void moveRight() {
-
-	bgX = bgX + bgDX;
-				
-	bg1X = bg1X + bgDX;
-	bg2X = bg2X + bgDX;
-
-	String mess = "Moving background right: bgX=" + bgX + " bg1X=" + bg1X + " bg2X=" + bg2X;
-	System.out.println (mess);
-
-	if (bg1X > 0) {
-		System.out.println ("Background change: bgX = " + bgX); 
-		bg1X = bgImageWidth * -1;
-		bg2X = 0;
-	}
-
-   }
- 
-
-  public void draw (Graphics2D g2) {
-	g2.drawImage(bgImage, bg1X, 0, null);
-	g2.drawImage(bgImage, bg2X, 0, null);
-  }
-
+    public void draw(Graphics2D g2) {
+        g2.drawImage(bgImage, bg1X, 0, null);
+        g2.drawImage(bgImage, bg2X, 0, null);
+    }
 }

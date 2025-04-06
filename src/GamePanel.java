@@ -54,6 +54,7 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         //Creates a Graphics2D obj for the BufferedImage
         Graphics2D imageContext = (Graphics2D) image.getGraphics();
 
+        bgImage.update();
         bgImage.draw(imageContext);
         
         Graphics2D g2 = (Graphics2D) getGraphics();
@@ -68,8 +69,8 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         int cnt = 10;
 
         if(bgImage != null)
-            bgImage.move(cnt++);
-
+            bgImage.setAutoScroll(isRunning);
+        
     }
 
     public void run() {
