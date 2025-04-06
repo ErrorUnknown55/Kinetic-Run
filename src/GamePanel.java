@@ -39,7 +39,7 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         //    setBackground(new Color(0,0,98));//Dark blue
     
         //bgImage = ImageManager.loadImage("images/background/backgroundColorForest.png");
-        image = new BufferedImage(900, 750, BufferedImage.TYPE_INT_RGB);
+        image = new BufferedImage(900, 700, BufferedImage.TYPE_INT_RGB);
 
         gameFont = new  Font("Arial", Font.BOLD, 24);  
 
