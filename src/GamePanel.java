@@ -4,7 +4,7 @@ import java.awt.event.KeyListener;
 import java.awt.image.*;
 import javax.swing.JPanel;
 
-public class GamePanel extends JPanel implements KeyListener, Runnable{
+public class GamePanel extends JPanel implements KeyListener, Runnable {
 
     private Thread gameThread;
 
@@ -13,7 +13,7 @@ public class GamePanel extends JPanel implements KeyListener, Runnable{
 
     //Image
     private BufferedImage image;
-    private Image bgImage;
+    private Background bgImage;
 
     //Veriables
     private int scrWidth;
@@ -35,13 +35,18 @@ public class GamePanel extends JPanel implements KeyListener, Runnable{
         setFocusable(true);
         requestFocusInWindow();
 
-        if(bgImage == null)
-            setBackground(new Color(0,0,102));//Dark blue
+        //if(bgImage == null)
+        //    setBackground(new Color(0,0,98));//Dark blue
     
-        bgImage = ImageManager.loadImage("images/background/backgroundColorForest.png");
-        image = new BufferedImage(900, 900, BufferedImage.TYPE_INT_RGB);
+        //bgImage = ImageManager.loadImage("images/background/backgroundColorForest.png");
+        image = new BufferedImage(900, 750, BufferedImage.TYPE_INT_RGB);
 
         gameFont = new  Font("Arial", Font.BOLD, 24);  
+
+    }
+
+    public void createGameEntities() {
+        bgImage = new Background(this, "images/background/backgroundColorForest.png", 98);
 
     }
     
@@ -49,9 +54,7 @@ public class GamePanel extends JPanel implements KeyListener, Runnable{
         //Creates a Graphics2D obj for the BufferedImage
         Graphics2D imageContext = (Graphics2D) image.getGraphics();
 
-        //Draw the background image
-        if(bgImage != null)
-            imageContext.drawImage(bgImage, 0, 0, null);
+        bgImage.draw(imageContext);
         
         Graphics2D g2 = (Graphics2D) getGraphics();
         g2.drawImage(image, 0, 0, scrWidth, scrHeight, null);
@@ -62,20 +65,27 @@ public class GamePanel extends JPanel implements KeyListener, Runnable{
 
     public void gameUpdate() {
 
+        int cnt = 10;
+
+        if(bgImage != null)
+            bgImage.move(cnt++);
+
     }
 
     public void run() {
         try {
-            isRunning = true;
-            while(isRunning) {
-                if(!isPaused){
-                    gameUpdate();
-                }
-                gameRender();
-                Thread.sleep(50);
-            }
-        } catch (InterruptedException e) {} 
+			isRunning = true;
+			while (isRunning) {
+				if (!isPaused)
+					gameUpdate();
+				gameRender();
+				Thread.sleep (50);	
+			}
+		}
+		catch(InterruptedException e) {}
     }
+
+
 
 
     public void startGame() {
@@ -84,6 +94,8 @@ public class GamePanel extends JPanel implements KeyListener, Runnable{
 
         isRunning = false;
         isPaused = false; 
+
+        createGameEntities();
 
         gameThread = new Thread(this);
         gameThread.start();
