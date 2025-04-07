@@ -81,8 +81,6 @@ public class GameWindow extends JFrame {
         buttonPanel.add(exitBtn);
         mainPanel.add(buttonPanel, BorderLayout.CENTER);
 
-
-
         setLocationRelativeTo(null);//Center the window
         setResizable(false);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

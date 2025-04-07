@@ -34,9 +34,6 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         addKeyListener(this);
         setFocusable(true);
         requestFocusInWindow();
-
-        //if(bgImage == null)
-        //    setBackground(new Color(0,0,98));//Dark blue
     
         //bgImage = ImageManager.loadImage("images/background/backgroundColorForest.png");
         image = new BufferedImage(900, 700, BufferedImage.TYPE_INT_RGB);
@@ -65,8 +62,6 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
     }
 
     public void gameUpdate() {
-
-        int cnt = 10;
 
         if(bgImage != null)
             bgImage.setAutoScroll(isRunning);
