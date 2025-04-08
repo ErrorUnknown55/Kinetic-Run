@@ -92,7 +92,12 @@ public class Player {
 
     }
 
-    public boolean isOnShip(int x, int y) {
+    //
+    public void jump() {
+
+    }
+
+    public boolean isOnPlayer(int x, int y) {
         Rectangle2D.Double myRectangle = getBoundingRectangle();
         return myRectangle.contains(x, y);
     }
