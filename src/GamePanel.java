@@ -19,7 +19,7 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
     //Tile Map
     private TileMap tileMap;
     private TileMapManager tileMapManager;
-    private String mapFile = "maps/map1.txt";
+    private String mapFile = "maps/map2.txt";
 
     //Veriables
     private int scrWidth;

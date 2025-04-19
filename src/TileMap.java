@@ -5,7 +5,7 @@ import javax.swing.JPanel;
 
 public class TileMap {
 
-    private static final int TILE_SIZE = 55;
+    private static final int TILE_SIZE = 60;
     private Image[][] tiles;
     private int screenWidth, screenHeight;
     private int mapWidth, mapHeight;
@@ -86,8 +86,7 @@ public class TileMap {
                     g2.drawImage(tile, drawX, drawY, TILE_SIZE, TILE_SIZE, null);
                     
                     // Debug output
-                    System.out.printf("Fixed - Drawing tile at %d,%d (screen: %d,%d)%n",
-                        x, y, drawX, drawY);
+                    //System.out.printf("Fixed - Drawing tile at %d,%d (screen: %d,%d)%n",x, y, drawX, drawY);
                 }
             }
         }

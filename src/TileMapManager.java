@@ -82,8 +82,8 @@ public class TileMapManager {
                 if (tile >= 0 && tile < tiles.size()) {
                     newMap.setTile(x, y, tiles.get(tile));
                     // In TileMapManager.loadMap()
-System.out.println("Loaded map with dimensions: " + mapWidth + "x" + mapHeight);
-System.out.println("First tile at (0,0) is: " + newMap.getTile(0, 0));
+                    System.out.println("Loaded map with dimensions: " + mapWidth + "x" + mapHeight);
+                    System.out.println("First tile at (0,0) is: " + newMap.getTile(0, 0));
                 }
 /*
                 // check if the char represents a sprite
