@@ -82,7 +82,8 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
     public void createGameEntities() {
         
         bgImage = new Background(this, "images/background/backgroundColorForest.png", 98);
-        mapFile = "maps/map"+mapcount+".txt";
+        // mapFile = "maps/map"+mapcount+".txt";
+        mapFile = "maps/map2.txt";
         try {
             //Load Tile Map
             tileMap = tileMapManager.loadMap(mapFile);
@@ -112,7 +113,7 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         if(tileMap != null) {
             tileMap.draw(imageContext);
         }
-        System.out.println("Loading map:" + mapFile);
+        // System.out.println("Loading map:" + mapFile);
 
         // pf.drawPlatforms(imageContext);
         // pf2.drawPlatforms(imageContext);
@@ -189,27 +190,27 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
             }
         }
 
-        startTime = startTime + 1;
-        if (startTime >= 50){
-            mapcount = mapcount + 1;
-            if (mapcount > 5){
-                mapcount = 1;
-            }
-            mapFile = "maps/map"+mapcount+".txt";
-            // mapFile = "maps/map3.txt";
-            try {
-                //Load Tile Map
-                System.out.println("Loading map:" + mapFile);
-                tileMap = tileMapManager.loadMap(mapFile);
+        // startTime = startTime + 1;
+        // if (startTime >= 50){
+        //     mapcount = mapcount + 1;
+        //     if (mapcount > 5){
+        //         mapcount = 1;
+        //     }
+        //     mapFile = "maps/map"+mapcount+".txt";
+        //     // mapFile = "maps/map3.txt";
+        //     try {
+        //         //Load Tile Map
+        //         System.out.println("Loading map:" + mapFile);
+        //         tileMap = tileMapManager.loadMap(mapFile);
     
-            } catch (IOException e) {
-                System.err.println("Error loading map:" +  e.getMessage());
-                e.printStackTrace();
-            }
-            startTime = 0;
+        //     } catch (IOException e) {
+        //         System.err.println("Error loading map:" +  e.getMessage());
+        //         e.printStackTrace();
+        //     }
+        //     startTime = 0;
 
-        }
-        System.out.println("Game:" + startTime);
+        // }
+        // System.out.println("Game:" + startTime);
         
     }
 
