@@ -21,6 +21,7 @@ public class TileMap {
         mapHeight = height;
         offsetY = screenHeight - tilesToPixels(mapHeight);
         tiles = new Image[mapWidth][mapHeight];
+        System.out.println("tile map created");
     }
 
     public int getWidthPixels() {

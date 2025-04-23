@@ -3,6 +3,10 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.image.*;
 import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Random;
+
 import javax.swing.JPanel;
 
 public class GamePanel extends JPanel implements KeyListener, Runnable {
@@ -19,7 +23,7 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
     //Tile Map
     private TileMap tileMap;
     private TileMapManager tileMapManager;
-    private String mapFile = "maps/map2.txt";
+    private String mapFile;
 
     //Veriables
     private int scrWidth;
@@ -30,6 +34,18 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
     //Font
     private Font gameFont;
 
+    private long startTime;
+    private int mapcount;
+    
+    private List<PlatformGen> platforms;
+    private int platformDelayCounter = 0;
+    private int platformSpawnDelay = 240;
+    private PlatformGen pf,pf2,pf3;
+    private int lastPlatformY = -100;
+    private int minVerticalSpacing = 20;
+
+    private Random random = new Random();
+
     public GamePanel(int scrW,  int scrH) {
 
         this.scrWidth =  scrW;
@@ -38,6 +54,20 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         addKeyListener(this);
         setFocusable(true);
         requestFocusInWindow();
+        startTime = 0;
+        mapcount = 1;
+
+        platforms = new LinkedList<>();
+        pf = new PlatformGen(this,450, null);
+        pf2 = new PlatformGen(this, 300, null);
+        pf3 = new PlatformGen(this, 200, null);
+
+        platforms.add(pf);
+        lastPlatformY = 450;
+        // platforms.add(pf2);
+        platforms.add(pf3);
+        lastPlatformY = 200;
+
     
         
         image = new BufferedImage(900, 700, BufferedImage.TYPE_INT_RGB);
@@ -52,7 +82,7 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
     public void createGameEntities() {
         
         bgImage = new Background(this, "images/background/backgroundColorForest.png", 98);
-
+        mapFile = "maps/map"+mapcount+".txt";
         try {
             //Load Tile Map
             tileMap = tileMapManager.loadMap(mapFile);
@@ -61,6 +91,7 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
             System.err.println("Error loading map:" +  e.getMessage());
             e.printStackTrace();
         }
+        
 
     }
     
@@ -81,18 +112,104 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         if(tileMap != null) {
             tileMap.draw(imageContext);
         }
+        System.out.println("Loading map:" + mapFile);
+
+        // pf.drawPlatforms(imageContext);
+        // pf2.drawPlatforms(imageContext);
+        // pf3.drawPlatforms(imageContext);;
+        for (PlatformGen platform : platforms) {
+            platform.drawPlatforms(imageContext);
+        }
         
         Graphics2D g2 = (Graphics2D) getGraphics();
         g2.drawImage(image, 0, 0, scrWidth, scrHeight, null);
         
         imageContext.dispose();
-        g2.dispose();        
+        g2.dispose();  
+        // startTime = 0;
+              
     }
 
     public void gameUpdate() {
 
         if(bgImage != null)
             bgImage.setAutoScroll(isRunning);
+        
+        // pf.move();
+        // pf2.move();
+        // pf3.move();
+        List<PlatformGen> platformsToRemove = new LinkedList<>();
+        for (PlatformGen platform : platforms) {
+            platform.move();
+            if (platform.getX() + platform.getWidth() < 0) {
+                platformsToRemove.add(platform);
+            }
+        }
+        platforms.removeAll(platformsToRemove);
+
+        // Control platform generation with a delay
+        if (platformDelayCounter >= platformSpawnDelay) {
+            int newPlatformY;
+            boolean validY = false;
+            int attempts = 0;
+            int maxAttempts = 100;
+
+            while (!validY && attempts < maxAttempts) {
+                int potentialY = random.nextInt(450) + 75;
+                boolean overlapping = false;
+                PlatformGen tempPlatform = new PlatformGen(this, potentialY, null);
+                int newPlatformTop = potentialY;
+                int newPlatformBottom = potentialY + tempPlatform.getHeight();
+
+                for (PlatformGen existingPlatform : platforms) {
+                    int existingPlatformTop = existingPlatform.getY();
+                    int existingPlatformBottom = existingPlatform.getY() + existingPlatform.getHeight();
+
+                    // Check for vertical overlap
+                    if (newPlatformTop < existingPlatformBottom && newPlatformBottom > existingPlatformTop) {
+                        overlapping = true;
+                        break; // No need to check further if overlap is found
+                    }
+
+                    // Check for minimum vertical spacing
+                    if (Math.abs(newPlatformTop - existingPlatformBottom) < minVerticalSpacing && newPlatformTop < existingPlatformBottom ||
+                        Math.abs(newPlatformBottom - existingPlatformTop) < minVerticalSpacing && newPlatformBottom > existingPlatformTop) {
+                        overlapping = true;
+                        break;
+                    }
+                }
+
+                if (!overlapping) {
+                    newPlatformY = potentialY;
+                    platforms.add(new PlatformGen(this, newPlatformY, null));
+                    lastPlatformY = newPlatformY;
+                    validY = true;
+                }
+                attempts++;
+            }
+        }
+
+        startTime = startTime + 1;
+        if (startTime >= 50){
+            mapcount = mapcount + 1;
+            if (mapcount > 5){
+                mapcount = 1;
+            }
+            mapFile = "maps/map"+mapcount+".txt";
+            // mapFile = "maps/map3.txt";
+            try {
+                //Load Tile Map
+                System.out.println("Loading map:" + mapFile);
+                tileMap = tileMapManager.loadMap(mapFile);
+    
+            } catch (IOException e) {
+                System.err.println("Error loading map:" +  e.getMessage());
+                e.printStackTrace();
+            }
+            startTime = 0;
+
+        }
+        System.out.println("Game:" + startTime);
         
     }
 
