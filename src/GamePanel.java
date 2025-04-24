@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
-
 import javax.swing.JPanel;
 
 public class GamePanel extends JPanel implements KeyListener, Runnable {
@@ -24,6 +23,9 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
     private TileMap tileMap;
     private TileMapManager tileMapManager;
     private String mapFile;
+
+    //Player
+    private Player player;
 
     //Veriables
     private int scrWidth;
@@ -62,6 +64,8 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         pf2 = new PlatformGen(this, 300, null);
         pf3 = new PlatformGen(this, 200, null);
 
+        player = new Player(100, 545);
+
         platforms.add(pf);
         lastPlatformY = 450;
         // platforms.add(pf2);
@@ -82,7 +86,8 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
     public void createGameEntities() {
         
         bgImage = new Background(this, "images/background/backgroundColorForest.png", 98);
-        mapFile = "maps/map"+mapcount+".txt";
+        // mapFile = "maps/map"+mapcount+".txt";
+        mapFile = "maps/map2.txt";
         try {
             //Load Tile Map
             tileMap = tileMapManager.loadMap(mapFile);
@@ -112,7 +117,11 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         if(tileMap != null) {
             tileMap.draw(imageContext);
         }
-        System.out.println("Loading map:" + mapFile);
+
+        player.draw(imageContext);
+
+        
+        // System.out.println("Loading map:" + mapFile);
 
         // pf.drawPlatforms(imageContext);
         // pf2.drawPlatforms(imageContext);
@@ -189,27 +198,27 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
             }
         }
 
-        startTime = startTime + 1;
-        if (startTime >= 50){
-            mapcount = mapcount + 1;
-            if (mapcount > 5){
-                mapcount = 1;
-            }
-            mapFile = "maps/map"+mapcount+".txt";
-            // mapFile = "maps/map3.txt";
-            try {
-                //Load Tile Map
-                System.out.println("Loading map:" + mapFile);
-                tileMap = tileMapManager.loadMap(mapFile);
+        // startTime = startTime + 1;
+        // if (startTime >= 50){
+        //     mapcount = mapcount + 1;
+        //     if (mapcount > 5){
+        //         mapcount = 1;
+        //     }
+        //     mapFile = "maps/map"+mapcount+".txt";
+        //     // mapFile = "maps/map3.txt";
+        //     try {
+        //         //Load Tile Map
+        //         System.out.println("Loading map:" + mapFile);
+        //         tileMap = tileMapManager.loadMap(mapFile);
     
-            } catch (IOException e) {
-                System.err.println("Error loading map:" +  e.getMessage());
-                e.printStackTrace();
-            }
-            startTime = 0;
+        //     } catch (IOException e) {
+        //         System.err.println("Error loading map:" +  e.getMessage());
+        //         e.printStackTrace();
+        //     }
+        //     startTime = 0;
 
-        }
-        System.out.println("Game:" + startTime);
+        // }
+        // System.out.println("Game:" + startTime);
         
     }
 
@@ -254,14 +263,29 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
 
     @Override
     public void keyPressed(KeyEvent e) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'keyPressed'");
+        int key = e.getKeyCode();
+        switch(key) {
+            case KeyEvent.VK_LEFT:
+                player.movement(4);  // Move left
+            break;
+            
+            case KeyEvent.VK_RIGHT:
+                player.movement(6);  // Move right
+            break;
+            
+            case KeyEvent.VK_UP:
+                player.movement(8);  // Jump
+            break;
+            
+            case KeyEvent.VK_DOWN:
+                player.movement(5);  // Duck
+            break;
+        }
     }
 
     @Override
     public void keyReleased(KeyEvent e) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'keyReleased'");
+        player.movement(0);
     }
     
 }
