@@ -19,7 +19,7 @@ public class PlatformGen {
 
 
     Random ran;
-    public PlatformGen(JPanel panel, int yPos,Player playe) {
+    public PlatformGen(JPanel panel, int yPos) {
         this.panel = panel;
         d = panel.getSize();
         xValues = new int[3];

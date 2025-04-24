@@ -61,11 +61,12 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         mapcount = 1;
 
         platforms = new LinkedList<>();
-        pf = new PlatformGen(this,450, null);
-        pf2 = new PlatformGen(this, 300, null);
-        pf3 = new PlatformGen(this, 200, null);
+        pf = new PlatformGen(this,450);
+        pf2 = new PlatformGen(this, 300);
+        pf3 = new PlatformGen(this, 200);
 
-        player = new Player(100, 548);
+        player = new Player(100, 545, platforms);
+        
 
         platforms.add(pf);
         lastPlatformY = 450;
@@ -197,7 +198,7 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
             while (!validY && attempts < maxAttempts) {
                 int potentialY = random.nextInt(450) + 75;
                 boolean overlapping = false;
-                PlatformGen tempPlatform = new PlatformGen(this, potentialY, null);
+                PlatformGen tempPlatform = new PlatformGen(this, potentialY);
                 int newPlatformTop = potentialY;
                 int newPlatformBottom = potentialY + tempPlatform.getHeight();
 
@@ -221,7 +222,7 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
 
                 if (!overlapping) {
                     newPlatformY = potentialY;
-                    platforms.add(new PlatformGen(this, newPlatformY, null));
+                    platforms.add(new PlatformGen(this, newPlatformY));
                     lastPlatformY = newPlatformY;
                     validY = true;
                 }

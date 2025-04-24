@@ -1,6 +1,8 @@
 import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.geom.Rectangle2D;
+import java.util.LinkedList;
+import java.util.List;
 
 public class Player {
     
@@ -26,7 +28,10 @@ public class Player {
     // Player Images
     private Image deadImage, duckImage, fallImage, hitImage, rollImage, standImage;
 
-    public Player(int x, int y) {
+    //Platforms
+    private List<PlatformGen> platforms;
+
+    public Player(int x, int y, List<PlatformGen> plf) {
         // Player position
         this.pX = x;
         this.pY = y;
@@ -51,6 +56,10 @@ public class Player {
         // Load player Swim Animation Sequence
         for(int i = 0; i < swimImages.length; i++)
             swimImages[i] = ImageManager.loadImage("images/player/PlayerBlue/playerBlue_swim"+ (i+1)+".png");
+
+        // Initialize platforms
+        this.platforms = plf;
+
     }
 
     public int getX() {
@@ -133,17 +142,36 @@ public class Player {
             // Prevents the player from moving out of the screen
             if (pX < 10)
                  pX = 10;
+            PlatformGen collision = collideWithPlatform();
+            if(collision != null){
+                pX = collision.getX() + collision.getWidth();
+            }
             updateWalkAnimation();
         } else if(dir == 6) { // Move the player Right
             pX += pSpeed;
             // Prevents the player from moving out of the screen
             if (pX > (880 - pWidth))
                 pX = 880 - pWidth;
+            PlatformGen collision = collideWithPlatform();
+            if(collision != null){
+                pX = collision.getX();
+            }
             updateWalkAnimation();
         } else {
             // No movement - reset walk animation
             walkFrame = 0;
         }
+    }
+
+    public PlatformGen collideWithPlatform(){
+        for(PlatformGen p: platforms){
+            Rectangle2D.Double myRect = getBoundingRectangle();
+            Rectangle2D.Double platformRect = p.getBoundingRectangle();
+            if (myRect.intersects(platformRect)){
+                return p;
+            }
+        }
+        return null;
     }
 
     // Update walk animation frames
