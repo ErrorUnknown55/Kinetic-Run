@@ -1,6 +1,7 @@
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.geom.Rectangle2D;
 import java.awt.image.*;
 import java.io.IOException;
 import java.util.LinkedList;
@@ -64,7 +65,7 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         pf2 = new PlatformGen(this, 300, null);
         pf3 = new PlatformGen(this, 200, null);
 
-        player = new Player(100, 545);
+        player = new Player(100, 548);
 
         platforms.add(pf);
         lastPlatformY = 450;
@@ -139,6 +140,31 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
               
     }
 
+    // In GamePanel.java
+    private void checkPlatformCollisions() {
+        player.setIsOnGround(false); // Assume not on ground until collision check
+        
+        for (PlatformGen platform : platforms) {
+            if (player.getBoundingRectangle().intersects(platform.getBoundingRectangle())) {
+                Rectangle2D.Double playerRect = player.getBoundingRectangle();
+                Rectangle2D.Double platformRect = platform.getBoundingRectangle();
+                
+                // Check if player is landing on top of platform
+                if (playerRect.y + playerRect.height >= platformRect.y && 
+                    playerRect.y + playerRect.height <= platformRect.y + 10 && // Tolerance
+                    playerRect.x + playerRect.width > platformRect.x && 
+                    playerRect.x < platformRect.x + platformRect.width) {
+                    
+                    player.setY((int)platformRect.y - player.getHeight());
+                    player.setIsOnGround(true);
+                    player.setVerticalVelocity(0);
+                }
+            }
+        }
+    }
+
+
+
     public void gameUpdate() {
 
         if(bgImage != null)
@@ -155,6 +181,11 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
             }
         }
         platforms.removeAll(platformsToRemove);
+
+        //Check collisions
+        checkPlatformCollisions();
+
+        player.update();
 
         // Control platform generation with a delay
         if (platformDelayCounter >= platformSpawnDelay) {

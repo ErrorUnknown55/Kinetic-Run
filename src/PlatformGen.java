@@ -1,11 +1,10 @@
-import javax.swing.JPanel;
-import java.util.Random;
+import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Image;
-import java.awt.Dimension;
-import java.awt.image.BufferedImage;
 import java.awt.geom.Rectangle2D;
-import java.awt.Color;
+import java.util.Random;
+import javax.swing.JPanel;
 public class PlatformGen {
     private JPanel panel;
 
@@ -92,7 +91,8 @@ public class PlatformGen {
     }
 
     public Rectangle2D.Double getBoundingRectangle() {
-        return new Rectangle2D.Double (x, y, getWidth(), getHeight());
+        return new Rectangle2D.Double (x + 5, y, getWidth() -10, 10);
+        //return new Rectangle2D.Double (x, y, getWidth(), getHeight());
      }
 
     // public void regenPlatforms

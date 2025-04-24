@@ -11,6 +11,12 @@ public class Player {
     private int currentDirection = 0; // To track current movement direction
     private int walkFrame = 0; // For walk animation
     private long lastWalkFrameTime = 0; // For animation timing
+    
+    private boolean isJumping = false;
+    private boolean isOnGround = false;
+    private float gravity = 0.5f;
+    private float verticalVelocity = 0;
+    private float jumpForce = -12f;
 
     // Player Animation Sequence
     private Image[] walkImages = new Image[5];
@@ -63,6 +69,21 @@ public class Player {
         return pHeight;
     }
 
+    public void update() {
+        //Apply Gravity if not on the ground
+        if(!isOnGround) {
+            verticalVelocity += gravity;
+            pY += verticalVelocity;
+        }
+
+        //Prevent falling through the buttom
+        if(pY > 548) {//Ground level
+            pY = 548;
+            isOnGround = true;
+            verticalVelocity = 0;
+        }
+    }
+
     // Draw the player with appropriate image based on movement
     public void draw(Graphics g2d) {
         Image currentImage = standImage; // Default standing image
@@ -93,8 +114,11 @@ public class Player {
 
         System.out.println("PX: "+pX+ " PY: "+pY);
         
-        if(dir == 8) { // Player jump
-            pY -= pSpeed;
+        if(dir == 8 && isOnGround) { // Player jump
+            verticalVelocity =  jumpForce;
+            isOnGround = false;
+            isJumping = true; 
+            //pY -= pSpeed;
             // Prevents the player from moving out of the screen
             if (pY < 0)
                 pY = 0;
@@ -132,7 +156,31 @@ public class Player {
     }
 
     public void jump() {
-        // You can implement jump animation here
+        if(isOnGround) {
+            verticalVelocity =  jumpForce;
+            isOnGround = false;
+            isJumping =  true;
+        }
+    }
+
+
+    public void setIsOnGround(boolean onGround) {
+        this.isOnGround = onGround;
+        if (onGround) {
+            this.isJumping = false;
+        }
+    }
+
+    public void setVerticalVelocity(float velocity) {
+        this.verticalVelocity = velocity;
+    }
+
+    public boolean isFalling() {
+        return verticalVelocity > 0;
+    }
+
+    public void setY(int y) {
+        this.pY = y;
     }
 
     public boolean isOnPlayer(int x, int y) {
