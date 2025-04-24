@@ -42,7 +42,7 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
     
     private List<PlatformGen> platforms;
     private int platformDelayCounter = 0;
-    private int platformSpawnDelay = 240;
+    private int platformSpawnDelay = 200;
     private PlatformGen pf,pf2,pf3;
     private int lastPlatformY = -100;
     private int minVerticalSpacing = 20;
