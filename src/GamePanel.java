@@ -42,15 +42,16 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
     private int mapcount;
     
     private List<PlatformGen> platforms;
+    private List<PowerUp> powerups;
     private int platformDelayCounter = 0;
-    private int platformSpawnDelay = 0; //suppose to control the speed at which th platforms generate
+    private int platformSpawnDelay; //suppose to control the speed at which th platforms generate
     private PlatformGen pf,pf2,pf3;
     private int lastPlatformY = -100;
-    private int minVerticalSpacing = 15;
-    private int targetVerticalDifference = 12;
-    private int verticalVariance = 3;
-    private int targetJumpSpace = 12;
-    private int jumpSpaceVariance = 3;
+    private int minVerticalSpacing;
+    private int targetVerticalDifference;
+    private int verticalVariance;
+    private int targetJumpSpace;
+    private int jumpSpaceVariance;
     private int lastPlatformBottom;
 
     private Random random = new Random();
@@ -80,7 +81,16 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         platforms.add(pf2);
         // lastPlatformY = 200;
 
-    
+        powerups = new LinkedList<>();  //initialize powerups list
+        
+        platformSpawnDelay=80;  //adjust to generate platforms slower
+        minVerticalSpacing = 15;
+        targetVerticalDifference = 12;
+        verticalVariance = 3;
+        targetJumpSpace = 12;
+        jumpSpaceVariance = 3;
+        
+
         
         image = new BufferedImage(900, 700, BufferedImage.TYPE_INT_RGB);
 
@@ -146,6 +156,10 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         for (PlatformGen platform : platforms) {
             platform.drawPlatforms(imageContext);
         }
+
+        for (PowerUp pu : powerups) {
+            pu.draw(imageContext);
+        }
         
         Graphics2D g2 = (Graphics2D) getGraphics();
         g2.drawImage(image, 0, 0, scrWidth, scrHeight, null);
@@ -201,97 +215,125 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         }
         platforms.removeAll(platformsToRemove);
 
+        List<PowerUp> powerUpsToRemove = new LinkedList<>();
+        for (PowerUp powerUp : powerups) {
+            powerUp.update(); // If your PowerUp class has an update method
+            if (powerUp.getX() + powerUp.getWidth() < 0) {
+                powerUpsToRemove.add(powerUp);
+            }
+        }
+        powerups.removeAll(powerUpsToRemove);
+
+
         //Check collisions
         checkPlatformCollisions();
+        checkPowerUpCollisions();
 
         player.update();
+        System.out.println("platformDelayCounter: " + platformDelayCounter);
 
         // Control platform generation with a delay
-    if (platformDelayCounter >= platformSpawnDelay) {
-        int newPlatformY = 0; // Initialize
+        if (platformDelayCounter >= platformSpawnDelay) {
+            int newPlatformY = 0; // Initialize
 
-        // *** MANUAL Y COORDINATE SELECTION LOGIC (THIS IS WHERE YOU'LL MODIFY) ***
-        if (platforms.size() == 0) {
-            newPlatformY = 450; // First platform at Y = 450
-            tempPlatform = new PlatformGen(this, newPlatformY, "large");
-        } else if (platforms.size() == 1) {
-            newPlatformY = 330; // Second platform at Y = 300
-            tempPlatform = new PlatformGen(this, newPlatformY, "medium");
-        } else if (platforms.size() == 2) {
-            newPlatformY = 270; // Third platform at Y = 200
-            tempPlatform = new PlatformGen(this, newPlatformY, "small");
-        } else {
-            // After the initial manual placements, you might revert to some other logic
-            // or stop generating new platforms. For this example, let's stop.
-            platformDelayCounter = 0; // Prevent further generation
-            return;
-        }
+            if (platforms.isEmpty()) {
+                // Spawn the first platform at a fixed Y
+                newPlatformY = 450;
+                tempPlatform = new PlatformGen(this, newPlatformY, "large");
+            } else {
+                // Get the Y coordinate of the last platform
+                int lastY = platforms.getLast().getY();
+                int lastHeight = platforms.getLast().getHeight();
+                int minNewY = lastY - targetJumpSpace - jumpSpaceVariance - lastHeight;
+                int maxNewY = lastY - targetJumpSpace + jumpSpaceVariance - lastHeight;
 
-        boolean validY = true; // Since we're manually setting it, assume it's valid initially
-        boolean overlapping = false;
-        // PlatformGen tempPlatform = new PlatformGen(this, newPlatformY);
-        int newPlatformTop = newPlatformY;
-        int newPlatformBottom = newPlatformY + tempPlatform.getHeight(); // ERROR HERE: Should be calculated
+                // Ensure the new platform doesn't go too high
+                newPlatformY = Math.max(120, random.nextInt(maxNewY - minNewY + 1) + minNewY);
 
-        for (PlatformGen existingPlatform : platforms) {
-            // ... (overlap and closeness checks) ...
+                // Randomly choose a size for the new platform
+                String[] sizes = {"small", "medium", "large"};
+                String newSize = sizes[random.nextInt(sizes.length)];
+                tempPlatform = new PlatformGen(this, newPlatformY, newSize);
+            }
 
-            // *** JUMP SPACE CHECK (THIS PART IS ALREADY SET UP) ***
-            if (platforms.size() > 0) {
-                int spaceBelowPrevious = lastPlatformBottom;
-                int spaceAboveNew = newPlatformTop;
-                int spaceDifference = Math.abs(spaceAboveNew - spaceBelowPrevious);
+            boolean validPlacement = true;
+            Rectangle2D.Double newPlatformRect = tempPlatform.checkPlatformIntersect();
 
-                if (spaceDifference < targetJumpSpace - jumpSpaceVariance || spaceDifference > targetJumpSpace + jumpSpaceVariance) {
-                    overlapping = true;
-                    validY = false; // Mark as invalid due to spacing
+            for (PlatformGen existingPlatform : platforms) {
+                Rectangle2D.Double existingPlatformRect = existingPlatform.checkPlatformIntersect();
+
+                // Check for direct overlap (both horizontal and vertical)
+                if (newPlatformRect.intersects(existingPlatformRect)) {
+                    validPlacement = false;
                     break;
                 }
+
+                // Check for minimum vertical spacing
+                if (newPlatformRect.y < existingPlatformRect.y) { // newPlatform is above existing
+                    if (newPlatformRect.y + newPlatformRect.height + minVerticalSpacing > existingPlatformRect.y) {
+                        validPlacement = false;
+                        break;
+                    }
+                } else { // existingPlatform is above or at the same level as newPlatform
+                    if (existingPlatformRect.y + existingPlatformRect.height + minVerticalSpacing > newPlatformRect.y) {
+                        validPlacement = false;
+                        break;
+                    }
+                }
+
+                // Optional: Implement a minimum horizontal spacing if desired
+                int minHorizontalSpacing = 5; // Adjust this value as needed
+                if (newPlatformRect.y == existingPlatformRect.y) { // Only check horizontal spacing if at the same vertical level
+                    if (newPlatformRect.x < existingPlatformRect.x) {
+                        if (newPlatformRect.x + newPlatformRect.width + minHorizontalSpacing > existingPlatformRect.x) {
+                            validPlacement = false;
+                            break;
+                        }
+                    } else {
+                        if (existingPlatformRect.x + existingPlatformRect.width + minHorizontalSpacing > newPlatformRect.x) {
+                            validPlacement = false;
+                            break;
+                        }
+                    }
+                }
             }
+
+            if (validPlacement) {
+                platforms.add(tempPlatform);
+                System.out.println("New platform at Y: " + newPlatformY);
+                // Chance to spawn a power-up on the new platform
+                if (random.nextDouble() < 0.9) {
+                    spawnPowerUp(platforms.getLast());
+                }
+            }
+
+            platformDelayCounter = 0; // Reset the delay
         }
+        platformDelayCounter++;
+            
 
-        if (!overlapping && validY) {
-            if(newPlatformY == 450){
-                platforms.add(new PlatformGen(this, newPlatformY, "large"));
-            }
-            if(newPlatformY == 330){
-                platforms.add(new PlatformGen(this, newPlatformY, "medium"));
-            }
-            if(newPlatformY == 270){
-                platforms.add(new PlatformGen(this, newPlatformY, "small"));
-            }
-            // platforms.add(new PlatformGen(this, newPlatformY));
-            lastPlatformY = newPlatformTop; // Corrected: Use newPlatformTop
-            lastPlatformBottom = newPlatformBottom;
-        }
-
-        platformDelayCounter = 0; // Reset the delay
-    }
-    platformDelayCounter++;
+            // startTime = startTime + 1;
+            // if (startTime >= 50){
+            //     mapcount = mapcount + 1;
+            //     if (mapcount > 5){
+            //         mapcount = 1;
+            //     }
+            //     mapFile = "maps/map"+mapcount+".txt";
+            //     // mapFile = "maps/map3.txt";
+            //     try {
+            //         //Load Tile Map
+            //         System.out.println("Loading map:" + mapFile);
+            //         tileMap = tileMapManager.loadMap(mapFile);
         
+            //     } catch (IOException e) {
+            //         System.err.println("Error loading map:" +  e.getMessage());
+            //         e.printStackTrace();
+            //     }
+            //     startTime = 0;
 
-        // startTime = startTime + 1;
-        // if (startTime >= 50){
-        //     mapcount = mapcount + 1;
-        //     if (mapcount > 5){
-        //         mapcount = 1;
-        //     }
-        //     mapFile = "maps/map"+mapcount+".txt";
-        //     // mapFile = "maps/map3.txt";
-        //     try {
-        //         //Load Tile Map
-        //         System.out.println("Loading map:" + mapFile);
-        //         tileMap = tileMapManager.loadMap(mapFile);
-    
-        //     } catch (IOException e) {
-        //         System.err.println("Error loading map:" +  e.getMessage());
-        //         e.printStackTrace();
-        //     }
-        //     startTime = 0;
-
-        // }
-        // System.out.println("Game:" + startTime);
-        
+            // }
+            // System.out.println("Game:" + startTime);
+            
     }
 
     public void run() {
@@ -305,6 +347,44 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
 			}
 		}
 		catch(InterruptedException e) {}
+    }
+
+    private void spawnPowerUp(PlatformGen platform) {
+        double powerUpType = random.nextDouble();
+        PowerUp newPowerUp = null;
+        int powerUpX = platform.getX() + platform.getWidth() / 2 - 11; // Center on platform (assuming power-up width is 32)
+        int powerUpY = platform.getY() - 21; // Place above platform (assuming power-up height is 32)
+    
+        if (powerUpType < 0.25) {
+            newPowerUp = new BluePillPowerUp("test", 1,this,powerUpX, powerUpY);
+        } else if (powerUpType < 0.5) { // 25% chance for Red Pill (0.25 to 0.5)
+            newPowerUp = new RedPillPowerUp("test", 1, this, powerUpX, powerUpY);
+        } else if (powerUpType < 0.75) { // 25% chance for Green Pill (0.5 to 0.75)
+            newPowerUp = new BlueShieldPowerUp("test", 1, this, powerUpX, powerUpY);
+        } else { // 25% chance for Yellow Pill (0.75 to 1.0)
+            newPowerUp = new YellowBoltPowerUp("test", 1, this, powerUpX, powerUpY);
+        }
+        System.out.println("PowerUp X: " + powerUpX + ", Y: " + powerUpY);
+        if (newPowerUp != null) {
+            powerups.add(newPowerUp);
+        }
+    }
+
+    private void checkPowerUpCollisions() {
+        List<PowerUp> collectedPowerUps = new LinkedList<>();
+        Rectangle2D.Double playerRect = player.getBoundingRectangle();
+
+        for (PowerUp powerUp : powerups) {
+            Rectangle2D.Double powerUpRect = powerUp.getBoundingRectangle();
+
+            if (playerRect.intersects(powerUpRect)) {
+                // Apply the effect of the power-up
+                // powerUp.applyEffect(player); // Assuming you have this method in your PowerUp class
+                collectedPowerUps.add(powerUp);
+                System.out.println("Player collected a " + powerUp.getClass().getSimpleName());
+            }
+        }
+        powerups.removeAll(collectedPowerUps); // Remove collected power-ups
     }
 
 

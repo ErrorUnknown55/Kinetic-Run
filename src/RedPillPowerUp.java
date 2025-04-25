@@ -1,4 +1,5 @@
 import java.awt.Graphics2D;
+import java.awt.Graphics;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.geom.Line2D;
@@ -8,19 +9,51 @@ import java.awt.Image;
 import java.util.ArrayList;
 import java.awt.image.BufferedImage;
 public class RedPillPowerUp extends PowerUp {
-    private String effect;
-    private float duration;
+    private Image redP;
+    private int x,y,width,height,dx;
+    private JPanel jp;
 
-    public RedPillPowerUp(String effect, float duration) {
+    public RedPillPowerUp(String effect, float duration,JPanel p, int x, int y) {
         super(effect, duration);
-        this.effect = effect;
-        this.duration = duration;
+        
+        this.x = x;
+        this.y=y;
+        width = 22;
+        height = 21;
+        dx = 6;
+        jp = p;
+
+        redP = ImageManager.loadImage("images/powerups/pill_red.png");
     }
 
     @Override
     public void applyEffect() {
         // Implement the effect of the red pill power-up here
         // System.out.println("Applying red pill effect: " + effect + " for " + duration + " seconds.");
+    }
+
+    public void update(){
+        if (!jp.isVisible()) return;
+
+        x = x - dx;
+    }
+    public void draw(Graphics g2d){
+        g2d.drawImage(redP, x, y, width, height, null);
+    }
+    public Rectangle2D.Double getBoundingRectangle() {
+        return new Rectangle2D.Double(x, y, width, height);
+    }
+    public int getX(){
+        return this.x;
+    }
+    public int getY(){
+        return this.y;
+    }
+    public int getWidth(){
+        return this.width;
+    }
+    public int getHeight(){
+        return this.height;
     }
     
 }

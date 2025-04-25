@@ -9,7 +9,7 @@ public class Player {
     // Variables
     private int pX, pY; // Player position
     private int pWidth = 45, pHeight = 54; // Size of player (added default values)
-    private int pSpeed = 5; // Speed of the player (added default value)
+    private int pSpeed = 8; // Speed of the player (added default value)
     private int currentDirection = 0; // To track current movement direction
     private int walkFrame = 0; // For walk animation
     private long lastWalkFrameTime = 0; // For animation timing

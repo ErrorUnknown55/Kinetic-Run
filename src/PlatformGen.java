@@ -13,7 +13,7 @@ public class PlatformGen {
 // might change to Buffered image
     private Image [] platformImages;
     private Dimension d;
-    private int x,y,dx = 7;
+    private int x,y,dx = 6;
     private int platform_num;
     private int imageWidth;
     private String size;
@@ -103,10 +103,16 @@ public class PlatformGen {
         return platformImages[platform_num].getHeight(panel);
     }
 
+    //to allow player to walk on platform
     public Rectangle2D.Double getBoundingRectangle() {
         return new Rectangle2D.Double (x + 5, y, getWidth() -10, 10);
         //return new Rectangle2D.Double (x, y, getWidth(), getHeight());
      }
+    
+    //for preventing platforms generating on each other
+    public Rectangle2D.Double checkPlatformIntersect(){
+        return new Rectangle2D.Double (x, y, getWidth(), getHeight());
+    }
 
     // public void regenPlatforms
 
