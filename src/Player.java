@@ -86,10 +86,37 @@ public class Player {
         }
 
         //Prevent falling through the buttom
-        if(pY > 548) {//Ground level
+        PlatformGen collision = collideWithPlatform();
+        // if(pY > 548 ) {//Ground level
+        //     pY = 548;
+        //     isOnGround = true;
+        //     verticalVelocity = 0;
+        // }
+        // if(collision!=null){
+        //     pY = collision.getY() - getHeight();
+        // }
+        // Handle collision with platforms
+        if (collision != null) {
+            // If we are falling onto a platform
+            if (isFalling()) {
+                pY = collision.getY() - getHeight(); // Land on top of the platform
+                isOnGround = true;
+                verticalVelocity = 0;
+                isJumping = false; // Reset jumping state
+            } else if (verticalVelocity < 0) {
+                // If we are jumping and hit the bottom of a platform
+                verticalVelocity = 0; // Stop upward movement
+                // Optionally, you could move the player slightly down to avoid being stuck
+                // pY = collision.getY() + collision.getHeight() + 1;
+            }
+        }
+
+        // Prevent falling through the ground
+        if (pY > 548 && collision == null) { // Only apply if not colliding with a platform
             pY = 548;
             isOnGround = true;
             verticalVelocity = 0;
+            isJumping = false; // Reset jumping state
         }
     }
 

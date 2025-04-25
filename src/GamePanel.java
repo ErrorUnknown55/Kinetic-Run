@@ -19,6 +19,7 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
     //Image
     private BufferedImage image;
     private Background bgImage;
+    private Background platform;
 
     //Tile Map
     private TileMap tileMap;
@@ -42,10 +43,15 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
     
     private List<PlatformGen> platforms;
     private int platformDelayCounter = 0;
-    private int platformSpawnDelay = 200;
+    private int platformSpawnDelay = 0; //suppose to control the speed at which th platforms generate
     private PlatformGen pf,pf2,pf3;
     private int lastPlatformY = -100;
-    private int minVerticalSpacing = 20;
+    private int minVerticalSpacing = 15;
+    private int targetVerticalDifference = 12;
+    private int verticalVariance = 3;
+    private int targetJumpSpace = 12;
+    private int jumpSpaceVariance = 3;
+    private int lastPlatformBottom;
 
     private Random random = new Random();
 
@@ -61,9 +67,9 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         mapcount = 1;
 
         platforms = new LinkedList<>();
-        pf = new PlatformGen(this,450);
-        pf2 = new PlatformGen(this, 300);
-        pf3 = new PlatformGen(this, 200);
+        pf = new PlatformGen(this,450, "large");
+        pf2 = new PlatformGen(this, 300, "medium");
+        pf3 = new PlatformGen(this, 200, "small");
 
         player = new Player(100, 545, platforms);
         
@@ -71,8 +77,8 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         platforms.add(pf);
         lastPlatformY = 450;
         // platforms.add(pf2);
-        platforms.add(pf3);
-        lastPlatformY = 200;
+        platforms.add(pf2);
+        // lastPlatformY = 200;
 
     
         
@@ -88,16 +94,20 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
     public void createGameEntities() {
         
         bgImage = new Background(this, "images/background/backgroundColorForest.png", 98);
+        bgImage.setY(0);
+        platform = new Background(this, "images/platform/greentiles/ground-platform.png", 98);
+        platform.setY(545+player.getHeight());
         // mapFile = "maps/map"+mapcount+".txt";
-        mapFile = "maps/map2.txt";
-        try {
-            //Load Tile Map
-            tileMap = tileMapManager.loadMap(mapFile);
 
-        } catch (IOException e) {
-            System.err.println("Error loading map:" +  e.getMessage());
-            e.printStackTrace();
-        }
+        // mapFile = "maps/map2.txt";
+        // try {
+        //     //Load Tile Map
+        //     tileMap = tileMapManager.loadMap(mapFile);
+
+        // } catch (IOException e) {
+        //     System.err.println("Error loading map:" +  e.getMessage());
+        //     e.printStackTrace();
+        // }
         
 
     }
@@ -113,6 +123,11 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         if(bgImage != null) {
             bgImage.update();
             bgImage.draw(imageContext);
+        }
+
+        if(platform != null){
+            platform.update();
+            platform.draw(imageContext);
         }
 
         //Draw tile map
@@ -167,10 +182,13 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
 
 
     public void gameUpdate() {
-
+        PlatformGen tempPlatform;
         if(bgImage != null)
             bgImage.setAutoScroll(isRunning);
         
+        if(platform != null){
+            platform.setAutoScroll(isRunning);
+        }
         // pf.move();
         // pf2.move();
         // pf3.move();
@@ -189,46 +207,68 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         player.update();
 
         // Control platform generation with a delay
-        if (platformDelayCounter >= platformSpawnDelay) {
-            int newPlatformY;
-            boolean validY = false;
-            int attempts = 0;
-            int maxAttempts = 100;
+    if (platformDelayCounter >= platformSpawnDelay) {
+        int newPlatformY = 0; // Initialize
 
-            while (!validY && attempts < maxAttempts) {
-                int potentialY = random.nextInt(450) + 75;
-                boolean overlapping = false;
-                PlatformGen tempPlatform = new PlatformGen(this, potentialY);
-                int newPlatformTop = potentialY;
-                int newPlatformBottom = potentialY + tempPlatform.getHeight();
+        // *** MANUAL Y COORDINATE SELECTION LOGIC (THIS IS WHERE YOU'LL MODIFY) ***
+        if (platforms.size() == 0) {
+            newPlatformY = 450; // First platform at Y = 450
+            tempPlatform = new PlatformGen(this, newPlatformY, "large");
+        } else if (platforms.size() == 1) {
+            newPlatformY = 330; // Second platform at Y = 300
+            tempPlatform = new PlatformGen(this, newPlatformY, "medium");
+        } else if (platforms.size() == 2) {
+            newPlatformY = 270; // Third platform at Y = 200
+            tempPlatform = new PlatformGen(this, newPlatformY, "small");
+        } else {
+            // After the initial manual placements, you might revert to some other logic
+            // or stop generating new platforms. For this example, let's stop.
+            platformDelayCounter = 0; // Prevent further generation
+            return;
+        }
 
-                for (PlatformGen existingPlatform : platforms) {
-                    int existingPlatformTop = existingPlatform.getY();
-                    int existingPlatformBottom = existingPlatform.getY() + existingPlatform.getHeight();
+        boolean validY = true; // Since we're manually setting it, assume it's valid initially
+        boolean overlapping = false;
+        // PlatformGen tempPlatform = new PlatformGen(this, newPlatformY);
+        int newPlatformTop = newPlatformY;
+        int newPlatformBottom = newPlatformY + tempPlatform.getHeight(); // ERROR HERE: Should be calculated
 
-                    // Check for vertical overlap
-                    if (newPlatformTop < existingPlatformBottom && newPlatformBottom > existingPlatformTop) {
-                        overlapping = true;
-                        break; // No need to check further if overlap is found
-                    }
+        for (PlatformGen existingPlatform : platforms) {
+            // ... (overlap and closeness checks) ...
 
-                    // Check for minimum vertical spacing
-                    if (Math.abs(newPlatformTop - existingPlatformBottom) < minVerticalSpacing && newPlatformTop < existingPlatformBottom ||
-                        Math.abs(newPlatformBottom - existingPlatformTop) < minVerticalSpacing && newPlatformBottom > existingPlatformTop) {
-                        overlapping = true;
-                        break;
-                    }
+            // *** JUMP SPACE CHECK (THIS PART IS ALREADY SET UP) ***
+            if (platforms.size() > 0) {
+                int spaceBelowPrevious = lastPlatformBottom;
+                int spaceAboveNew = newPlatformTop;
+                int spaceDifference = Math.abs(spaceAboveNew - spaceBelowPrevious);
+
+                if (spaceDifference < targetJumpSpace - jumpSpaceVariance || spaceDifference > targetJumpSpace + jumpSpaceVariance) {
+                    overlapping = true;
+                    validY = false; // Mark as invalid due to spacing
+                    break;
                 }
-
-                if (!overlapping) {
-                    newPlatformY = potentialY;
-                    platforms.add(new PlatformGen(this, newPlatformY));
-                    lastPlatformY = newPlatformY;
-                    validY = true;
-                }
-                attempts++;
             }
         }
+
+        if (!overlapping && validY) {
+            if(newPlatformY == 450){
+                platforms.add(new PlatformGen(this, newPlatformY, "large"));
+            }
+            if(newPlatformY == 330){
+                platforms.add(new PlatformGen(this, newPlatformY, "medium"));
+            }
+            if(newPlatformY == 270){
+                platforms.add(new PlatformGen(this, newPlatformY, "small"));
+            }
+            // platforms.add(new PlatformGen(this, newPlatformY));
+            lastPlatformY = newPlatformTop; // Corrected: Use newPlatformTop
+            lastPlatformBottom = newPlatformBottom;
+        }
+
+        platformDelayCounter = 0; // Reset the delay
+    }
+    platformDelayCounter++;
+        
 
         // startTime = startTime + 1;
         // if (startTime >= 50){

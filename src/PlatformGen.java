@@ -13,13 +13,16 @@ public class PlatformGen {
 // might change to Buffered image
     private Image [] platformImages;
     private Dimension d;
-    private int x,y,dx = 2;
+    private int x,y,dx = 7;
     private int platform_num;
     private int imageWidth;
-
+    private String size;
 
     Random ran;
-    public PlatformGen(JPanel panel, int yPos) {
+    Random small;
+    Random medium;
+    Random large;
+    public PlatformGen(JPanel panel, int yPos, String size) {
         this.panel = panel;
         d = panel.getSize();
         xValues = new int[3];
@@ -28,12 +31,22 @@ public class PlatformGen {
         int num;
         for (int i = 0; i< 14; i++ ){
             num=i+1;
-            platformImages[i] = ImageManager.loadImage("sprites/spritesheet."+num+".png");
+            platformImages[i] = ImageManager.loadImage("sprites-ordered/spritesheet."+num+".png");
         }
         x=700;
         ran = new Random();
-        platform_num = ran.nextInt(13);
+        if (size == "large"){
+            platform_num = ran.nextInt(4 - 0 + 1) + 0;
+        }
+        if (size == "medium"){
+            platform_num = ran.nextInt(10 - 5 + 1) + 5;
+        }
+        if (size == "small"){
+            platform_num = ran.nextInt(13 - 11 + 1) + 11;
+        }
+        // platform_num = ran.nextInt(13);
         y = yPos;
+        this.size = size;
 
 
 
@@ -68,7 +81,7 @@ public class PlatformGen {
         imageWidth = platformImages[platform_num].getWidth(panel);
         int imageSize = x + imageWidth;
         if (imageSize < 0){
-            platform_num = ran.nextInt(13);
+            // platform_num = ran.nextInt(13);
             x=700;
             // regenplatforms();
             // newPanelNeeded = true;

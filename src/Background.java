@@ -14,6 +14,8 @@ public class Background {
     private boolean autoScroll;//flag for automatic scrolling
     private int scrollSpeed;//speed of scrolling
 
+    private int y;
+
     public Background(GamePanel panel, String imageFile, int bgDX) {
         this.panel = panel;
         this.bgImage = ImageManager.loadImage(imageFile);
@@ -39,6 +41,10 @@ public class Background {
         if (autoScroll) {
             moveLeft();
         }
+    }
+
+    public void setY(int y){
+        this.y = y;
     }
 
     public void move(int direction) {
@@ -74,7 +80,7 @@ public class Background {
     }
 
     public void draw(Graphics2D g2) {
-        g2.drawImage(bgImage, bg1X, 0, null);
-        g2.drawImage(bgImage, bg2X, 0, null);
+        g2.drawImage(bgImage, bg1X, y, null);
+        g2.drawImage(bgImage, bg2X, y, null);
     }
 }
