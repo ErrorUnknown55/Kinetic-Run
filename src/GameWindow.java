@@ -67,7 +67,7 @@ public class GameWindow extends JFrame {
         });
         
         //Setting button 
-        JButton settingBtn = createButtonStyle("SETTING");
+        //JButton settingBtn = createButtonStyle("SETTING");
         
         //Exit
         JButton exitBtn = createButtonStyle("Exit");
