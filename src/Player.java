@@ -1,3 +1,4 @@
+import java.awt.Graphics2D;
 import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.geom.Rectangle2D;
@@ -59,6 +60,7 @@ public class Player {
 
         // Initialize platforms
         this.platforms = plf;
+        
 
     }
 
@@ -121,7 +123,7 @@ public class Player {
     }
 
     // Draw the player with appropriate image based on movement
-    public void draw(Graphics g2d) {
+    public void draw(Graphics2D g2d) {
         Image currentImage = standImage; // Default standing image
         
         // Check movement direction and select appropriate image

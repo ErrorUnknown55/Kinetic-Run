@@ -56,6 +56,8 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
 
     private Random random = new Random();
 
+    private Enemy flyingEnemy;
+
     public GamePanel(int scrW,  int scrH) {
 
         this.scrWidth =  scrW;
@@ -89,6 +91,8 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         verticalVariance = 3;
         targetJumpSpace = 12;
         jumpSpaceVariance = 3;
+
+        flyingEnemy = new Enemy(700, 350, 2, this, player);
         
 
         
@@ -148,6 +152,8 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         player.draw(imageContext);
 
         
+
+        
         // System.out.println("Loading map:" + mapFile);
 
         // pf.drawPlatforms(imageContext);
@@ -160,7 +166,7 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         for (PowerUp pu : powerups) {
             pu.draw(imageContext);
         }
-        
+        flyingEnemy.draw(imageContext);
         Graphics2D g2 = (Graphics2D) getGraphics();
         g2.drawImage(image, 0, 0, scrWidth, scrHeight, null);
         
@@ -197,6 +203,21 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
 
     public void gameUpdate() {
         PlatformGen tempPlatform;
+
+        flyingEnemy.update();
+
+        // Check for collisions between enemy projectiles and the player
+        List<Projectile> enemyProjectiles = flyingEnemy.getProjectiles();
+        List<Projectile> hitProjectiles = new LinkedList<>();
+        for (Projectile projectile : enemyProjectiles) {
+            if (projectile.getBoundingRectangle().intersects(player.getBoundingRectangle())) {
+                // Handle player being hit (e.g., decrease health, game over)
+                System.out.println("Player hit by projectile!");
+                hitProjectiles.add(projectile); // Mark for removal
+            }
+        }
+        enemyProjectiles.removeAll(hitProjectiles); // Remove hit projectiles
+
         if(bgImage != null)
             bgImage.setAutoScroll(isRunning);
         
