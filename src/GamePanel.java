@@ -21,6 +21,7 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
     private Background bgImage;
     private Background platform;
 
+
     //Tile Map
     private TileMap tileMap;
     private TileMapManager tileMapManager;
@@ -43,8 +44,10 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
     
     private List<PlatformGen> platforms;
     private List<PowerUp> powerups;
+
     private int platformDelayCounter = 0;
     private int platformSpawnDelay; //suppose to control the speed at which th platforms generate
+
     private PlatformGen pf,pf2,pf3;
     private int lastPlatformY = -100;
     private int minVerticalSpacing;
@@ -56,26 +59,35 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
 
     private Random random = new Random();
 
+
     private Enemy flyingEnemy;
+
 
     public GamePanel(int scrW,  int scrH) {
 
         this.scrWidth =  scrW;
         this.scrHeight = scrH;
+
+        
         
         addKeyListener(this);
         setFocusable(true);
         requestFocusInWindow();
+
+        soundManager = SoundManager.getInstance();
+        
+
         startTime = 0;
         mapcount = 1;
+
 
         platforms = new LinkedList<>();
         pf = new PlatformGen(this,450, "large");
         pf2 = new PlatformGen(this, 300, "medium");
         pf3 = new PlatformGen(this, 200, "small");
 
+
         player = new Player(100, 545, platforms);
-        
 
         platforms.add(pf);
         lastPlatformY = 450;
@@ -93,8 +105,9 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         jumpSpaceVariance = 3;
 
         flyingEnemy = new Enemy(700, 350, 2, this, player);
-        
 
+
+    
         
         image = new BufferedImage(900, 700, BufferedImage.TYPE_INT_RGB);
 
@@ -111,12 +124,14 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         bgImage.setY(0);
         platform = new Background(this, "images/platform/greentiles/ground-platform.png", 98);
         platform.setY(545+player.getHeight());
-        // mapFile = "maps/map"+mapcount+".txt";
 
+        // mapFile = "maps/map"+mapcount+".txt";
         // mapFile = "maps/map2.txt";
         // try {
         //     //Load Tile Map
         //     tileMap = tileMapManager.loadMap(mapFile);
+            
+            
 
         // } catch (IOException e) {
         //     System.err.println("Error loading map:" +  e.getMessage());
@@ -139,10 +154,12 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
             bgImage.draw(imageContext);
         }
 
+
         if(platform != null){
             platform.update();
             platform.draw(imageContext);
         }
+
 
         //Draw tile map
         if(tileMap != null) {
@@ -150,6 +167,7 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         }
 
         player.draw(imageContext);
+
 
         
 
@@ -167,6 +185,8 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
             pu.draw(imageContext);
         }
         flyingEnemy.draw(imageContext);
+
+        
         Graphics2D g2 = (Graphics2D) getGraphics();
         g2.drawImage(image, 0, 0, scrWidth, scrHeight, null);
         
@@ -202,10 +222,9 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
 
 
     public void gameUpdate() {
+
         PlatformGen tempPlatform;
-
         flyingEnemy.update();
-
         // Check for collisions between enemy projectiles and the player
         List<Projectile> enemyProjectiles = flyingEnemy.getProjectiles();
         List<Projectile> hitProjectiles = new LinkedList<>();
@@ -217,7 +236,6 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
             }
         }
         enemyProjectiles.removeAll(hitProjectiles); // Remove hit projectiles
-
         if(bgImage != null)
             bgImage.setAutoScroll(isRunning);
         
@@ -244,19 +262,14 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
             }
         }
         powerups.removeAll(powerUpsToRemove);
-
-
         //Check collisions
         checkPlatformCollisions();
         checkPowerUpCollisions();
-
         player.update();
         System.out.println("platformDelayCounter: " + platformDelayCounter);
-
         // Control platform generation with a delay
         if (platformDelayCounter >= platformSpawnDelay) {
             int newPlatformY = 0; // Initialize
-
             if (platforms.isEmpty()) {
                 // Spawn the first platform at a fixed Y
                 newPlatformY = 450;
@@ -267,28 +280,22 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
                 int lastHeight = platforms.getLast().getHeight();
                 int minNewY = lastY - targetJumpSpace - jumpSpaceVariance - lastHeight;
                 int maxNewY = lastY - targetJumpSpace + jumpSpaceVariance - lastHeight;
-
                 // Ensure the new platform doesn't go too high
                 newPlatformY = Math.max(120, random.nextInt(maxNewY - minNewY + 1) + minNewY);
-
                 // Randomly choose a size for the new platform
                 String[] sizes = {"small", "medium", "large"};
                 String newSize = sizes[random.nextInt(sizes.length)];
                 tempPlatform = new PlatformGen(this, newPlatformY, newSize);
             }
-
             boolean validPlacement = true;
             Rectangle2D.Double newPlatformRect = tempPlatform.checkPlatformIntersect();
-
             for (PlatformGen existingPlatform : platforms) {
                 Rectangle2D.Double existingPlatformRect = existingPlatform.checkPlatformIntersect();
-
                 // Check for direct overlap (both horizontal and vertical)
                 if (newPlatformRect.intersects(existingPlatformRect)) {
                     validPlacement = false;
                     break;
                 }
-
                 // Check for minimum vertical spacing
                 if (newPlatformRect.y < existingPlatformRect.y) { // newPlatform is above existing
                     if (newPlatformRect.y + newPlatformRect.height + minVerticalSpacing > existingPlatformRect.y) {
@@ -301,7 +308,6 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
                         break;
                     }
                 }
-
                 // Optional: Implement a minimum horizontal spacing if desired
                 int minHorizontalSpacing = 5; // Adjust this value as needed
                 if (newPlatformRect.y == existingPlatformRect.y) { // Only check horizontal spacing if at the same vertical level
@@ -318,7 +324,6 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
                     }
                 }
             }
-
             if (validPlacement) {
                 platforms.add(tempPlatform);
                 System.out.println("New platform at Y: " + newPlatformY);
@@ -328,34 +333,32 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
                     spawnPowerUp(platforms.getLast());
                 }
             }
-
             platformDelayCounter = 0; // Reset the delay
         }
         platformDelayCounter++;
-            
 
-            // startTime = startTime + 1;
-            // if (startTime >= 50){
-            //     mapcount = mapcount + 1;
-            //     if (mapcount > 5){
-            //         mapcount = 1;
-            //     }
-            //     mapFile = "maps/map"+mapcount+".txt";
-            //     // mapFile = "maps/map3.txt";
-            //     try {
-            //         //Load Tile Map
-            //         System.out.println("Loading map:" + mapFile);
-            //         tileMap = tileMapManager.loadMap(mapFile);
+        // startTime = startTime + 1;
+        // if (startTime >= 50){
+        //     mapcount = mapcount + 1;
+        //     if (mapcount > 5){
+        //         mapcount = 1;
+        //     }
+        //     mapFile = "maps/map"+mapcount+".txt";
+        //     // mapFile = "maps/map3.txt";
+        //     try {
+        //         //Load Tile Map
+        //         System.out.println("Loading map:" + mapFile);
+        //         tileMap = tileMapManager.loadMap(mapFile);
+    
+        //     } catch (IOException e) {
+        //         System.err.println("Error loading map:" +  e.getMessage());
+        //         e.printStackTrace();
+        //     }
+        //     startTime = 0;
+
+        // }
+        // System.out.println("Game:" + startTime);
         
-            //     } catch (IOException e) {
-            //         System.err.println("Error loading map:" +  e.getMessage());
-            //         e.printStackTrace();
-            //     }
-            //     startTime = 0;
-
-            // }
-            // System.out.println("Game:" + startTime);
-            
     }
 
     public void run() {
@@ -391,14 +394,11 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
             powerups.add(newPowerUp);
         }
     }
-
     private void checkPowerUpCollisions() {
         List<PowerUp> collectedPowerUps = new LinkedList<>();
         Rectangle2D.Double playerRect = player.getBoundingRectangle();
-
         for (PowerUp powerUp : powerups) {
             Rectangle2D.Double powerUpRect = powerUp.getBoundingRectangle();
-
             if (playerRect.intersects(powerUpRect)) {
                 // Apply the effect of the power-up
                 // powerUp.applyEffect(player); // Assuming you have this method in your PowerUp class
@@ -412,6 +412,7 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
 
 
 
+
     public void startGame() {
         if(isRunning)
             return;
@@ -420,6 +421,9 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         isPaused = false; 
 
         createGameEntities();
+
+        soundManager.playClip("forest-background", true);
+        soundManager.setVolume("forest-background",0.7f);
 
         gameThread = new Thread(this);
         gameThread.start();
@@ -430,10 +434,7 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
 
     //Key Listener
     @Override
-    public void keyTyped(KeyEvent e) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'keyTyped'");
-    }
+    public void keyTyped(KeyEvent e) {}
 
     @Override
     public void keyPressed(KeyEvent e) {
