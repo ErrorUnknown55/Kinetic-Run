@@ -1,8 +1,6 @@
 import java.awt.Graphics2D;
-import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.geom.Rectangle2D;
-import java.util.LinkedList;
 import java.util.List;
 
 public class Player {
@@ -21,6 +19,10 @@ public class Player {
     private float verticalVelocity = 0;
     private float jumpForce = -12f;
 
+    //Sound
+    private SoundManager soundManager;
+    
+
     // Player Animation Sequence
     private Image[] walkImages = new Image[5];
     private Image[] swimImages = new Image[2];
@@ -36,7 +38,8 @@ public class Player {
         // Player position
         this.pX = x;
         this.pY = y;
-        
+
+        soundManager = SoundManager.getInstance();
 
         // Load images
         deadImage = ImageManager.loadImage("images/player/PlayerBlue/playerBlue_dead.png");
@@ -132,6 +135,7 @@ public class Player {
             case 6: // Right
                 // Animate walking
                 currentImage = walkImages[walkFrame];
+                soundManager.playClip("walk", true);
                 break;
             case 5: // Duck
                 currentImage = duckImage;
@@ -141,6 +145,7 @@ public class Player {
                 break;
             default:
                 currentImage = standImage;
+                soundManager.stopClip("walk");
         }
         
         g2d.drawImage(currentImage, pX, pY, pWidth, pHeight, null);
@@ -155,7 +160,8 @@ public class Player {
         if(dir == 8 && isOnGround) { // Player jump
             verticalVelocity =  jumpForce;
             isOnGround = false;
-            isJumping = true; 
+            soundManager.playClip("jump", false);
+            isJumping = true;
             //pY -= pSpeed;
             // Prevents the player from moving out of the screen
             if (pY < 0)
@@ -168,6 +174,7 @@ public class Player {
 
         } else if(dir == 4) { // Move the player Left
             pX -= pSpeed;
+            
             // Prevents the player from moving out of the screen
             if (pX < 10)
                  pX = 10;
@@ -178,6 +185,7 @@ public class Player {
             updateWalkAnimation();
         } else if(dir == 6) { // Move the player Right
             pX += pSpeed;
+            
             // Prevents the player from moving out of the screen
             if (pX > (880 - pWidth))
                 pX = 880 - pWidth;
@@ -213,7 +221,7 @@ public class Player {
     }
 
     public void jump() {
-        if(isOnGround) {
+        if(isOnGround) {    
             verticalVelocity =  jumpForce;
             isOnGround = false;
             isJumping =  true;

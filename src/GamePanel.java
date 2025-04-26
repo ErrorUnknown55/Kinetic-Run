@@ -53,12 +53,19 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
 
         this.scrWidth =  scrW;
         this.scrHeight = scrH;
+
+        
         
         addKeyListener(this);
         setFocusable(true);
         requestFocusInWindow();
+
+        soundManager = SoundManager.getInstance();
+        
+
         startTime = 0;
         mapcount = 1;
+
 
         platforms = new LinkedList<>();
         pf = new PlatformGen(this,450, null);
@@ -92,6 +99,8 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         try {
             //Load Tile Map
             tileMap = tileMapManager.loadMap(mapFile);
+            
+            
 
         } catch (IOException e) {
             System.err.println("Error loading map:" +  e.getMessage());
@@ -120,6 +129,9 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         }
 
         player.draw(imageContext);
+
+
+        
 
         
         // System.out.println("Loading map:" + mapFile);
@@ -278,6 +290,9 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
 
         createGameEntities();
 
+        soundManager.playClip("forest-background", true);
+        soundManager.setVolume("forest-background",0.7f);
+
         gameThread = new Thread(this);
         gameThread.start();
 
@@ -287,10 +302,7 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
 
     //Key Listener
     @Override
-    public void keyTyped(KeyEvent e) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'keyTyped'");
-    }
+    public void keyTyped(KeyEvent e) {}
 
     @Override
     public void keyPressed(KeyEvent e) {
