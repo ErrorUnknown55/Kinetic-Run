@@ -323,6 +323,7 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
                 platforms.add(tempPlatform);
                 System.out.println("New platform at Y: " + newPlatformY);
                 // Chance to spawn a power-up on the new platform
+                
                 if (random.nextDouble() < 0.9) {
                     spawnPowerUp(platforms.getLast());
                 }
