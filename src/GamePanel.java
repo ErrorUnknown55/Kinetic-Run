@@ -69,6 +69,8 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         this.scrHeight = scrH;
 
         
+
+        
         
         addKeyListener(this);
         setFocusable(true);
@@ -77,8 +79,13 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         soundManager = SoundManager.getInstance();
         
 
+
+        // soundManager = SoundManager.getInstance();
+        
+
         startTime = 0;
         mapcount = 1;
+
 
 
         platforms = new LinkedList<>();
@@ -167,6 +174,7 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         }
 
         player.draw(imageContext);
+
 
 
         
@@ -355,7 +363,28 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         //         e.printStackTrace();
         //     }
         //     startTime = 0;
+        // startTime = startTime + 1;
+        // if (startTime >= 50){
+        //     mapcount = mapcount + 1;
+        //     if (mapcount > 5){
+        //         mapcount = 1;
+        //     }
+        //     mapFile = "maps/map"+mapcount+".txt";
+        //     // mapFile = "maps/map3.txt";
+        //     try {
+        //         //Load Tile Map
+        //         System.out.println("Loading map:" + mapFile);
+        //         tileMap = tileMapManager.loadMap(mapFile);
+    
+        //     } catch (IOException e) {
+        //         System.err.println("Error loading map:" +  e.getMessage());
+        //         e.printStackTrace();
+        //     }
+        //     startTime = 0;
 
+        // }
+        // System.out.println("Game:" + startTime);
+        
         // }
         // System.out.println("Game:" + startTime);
         
@@ -425,6 +454,9 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         soundManager.playClip("forest-background", true);
         soundManager.setVolume("forest-background",0.7f);
 
+        soundManager.playClip("forest-background", true);
+        soundManager.setVolume("forest-background",0.7f);
+
         gameThread = new Thread(this);
         gameThread.start();
 
@@ -435,6 +467,7 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
     //Key Listener
     @Override
     public void keyTyped(KeyEvent e) {}
+    
 
     @Override
     public void keyPressed(KeyEvent e) {
