@@ -11,12 +11,19 @@ import javax.swing.*;
 public class GameWindow extends JFrame {
 
     private GamePanel gamePanel;
+    
+    //Sound
+    private SoundManager soundManager;
 
     int scrWidth = 700, scrHeight= 650;
     
     public GameWindow() {
         //Set Game Title
         setTitle("Kinetic Run"); 
+
+        soundManager = SoundManager.getInstance();
+
+        soundManager.playClip("BgStartGS", true);
         
         //Set Panel Size
         setSize(700,650);
@@ -57,6 +64,8 @@ public class GameWindow extends JFrame {
         playBtn.addActionListener((actionEvent) -> {
             //Removes all components from main panel
             mainPanel.removeAll();
+            soundManager.stopClip("BgStartGS");
+            soundManager.playClip("btnclick", false);
             //Add the gamePanel
             mainPanel.add(gamePanel, BorderLayout.CENTER);
             gamePanel.setVisible(true);
@@ -67,17 +76,18 @@ public class GameWindow extends JFrame {
         });
         
         //Setting button 
-        JButton settingBtn = createButtonStyle("SETTING");
+        //JButton settingBtn = createButtonStyle("SETTING");
         
         //Exit
         JButton exitBtn = createButtonStyle("Exit");
         exitBtn.addActionListener((actionEvent) -> {
+            soundManager.playClip("btnclick", false);
             System.exit(0);
         });
 
 
         buttonPanel.add(playBtn);
-        buttonPanel.add(settingBtn);
+        //buttonPanel.add(settingBtn);
         buttonPanel.add(exitBtn);
         mainPanel.add(buttonPanel, BorderLayout.CENTER);
 

@@ -1,7 +1,7 @@
 // for playing sound clips
-import javax.sound.sampled.*;
 import java.io.*;
 import java.util.HashMap;
+import javax.sound.sampled.*;
 
 public class SoundManager {
     HashMap<String, Clip> clips;
@@ -15,6 +15,21 @@ public class SoundManager {
         Clip clip;
 
         clips = new HashMap<String, Clip>();
+        //forest-background
+        clip = loadClip("sounds/forest-background.wav");
+        clips.put("forest-background", clip);
+
+        clip = loadClip("sounds/StartBgSound.wav");
+        clips.put("BgStartGS", clip);
+
+        clip = loadClip("sounds/mouse-click.wav");
+        clips.put("btnclick", clip);
+
+        clip = loadClip("sounds/pixel-jump.wav");
+        clips.put("jump", clip);
+
+        clip = loadClip("sounds/lego-walking-208360.wav");
+        clips.put("walk", clip);
 
         //Clip clip = loadClip("sounds/background.wav");	// played from start of the game eg for how to populate the hashmap
 		//clips.put("background", clip);
@@ -68,4 +83,15 @@ public class SoundManager {
             clip.stop();
         }
     }
+
+    public void setVolume (String title, float volume) {
+		Clip clip = getClip(title);
+
+		FloatControl gainControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
+	
+		float range = gainControl.getMaximum() - gainControl.getMinimum();
+		float gain = (range * volume) + gainControl.getMinimum();
+
+		gainControl.setValue(gain);
+	}
 }
