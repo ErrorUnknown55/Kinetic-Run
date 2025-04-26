@@ -235,7 +235,6 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
             }
         }
         platforms.removeAll(platformsToRemove);
-
         List<PowerUp> powerUpsToRemove = new LinkedList<>();
         for (PowerUp powerUp : powerups) {
             powerUp.update(); // If your PowerUp class has an update method
