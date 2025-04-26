@@ -77,7 +77,7 @@ public class GameWindow extends JFrame {
 
 
         buttonPanel.add(playBtn);
-        buttonPanel.add(settingBtn);
+        //buttonPanel.add(settingBtn);
         buttonPanel.add(exitBtn);
         mainPanel.add(buttonPanel, BorderLayout.CENTER);
 
