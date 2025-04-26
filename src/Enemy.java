@@ -38,6 +38,7 @@ public class Enemy {
     private Image[] walkingImages = new Image[1]; // Only one walking image provided
 
     private List<Projectile> projectiles;
+    
     private long lastShotTime = 0;
     private long shootingInterval = 1500; // Shoot every 1.5 seconds (adjust as needed)
     private Player targetPlayer; // Reference to the player
