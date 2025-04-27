@@ -13,6 +13,12 @@ public class BlueShieldPowerUp extends PowerUp{
     private Image blueS;
     private int x,y,width,height,dx;
     private JPanel jp;
+    private GamePanel gp;
+    private Player player;
+
+    private long shieldDuration = 8000; // 8 seconds of protection
+    private long shieldStartTime;
+    
 
     public BlueShieldPowerUp(String effect, float duration,JPanel p, int x, int y) {
         super(effect, duration);
@@ -22,6 +28,7 @@ public class BlueShieldPowerUp extends PowerUp{
         height = 21;
         dx = 6;
         jp=p;
+        this.gp = (GamePanel) p;
 
         blueS = ImageManager.loadImage("images/powerups/powerupBlue_shield.png");
     }
@@ -29,7 +36,22 @@ public class BlueShieldPowerUp extends PowerUp{
     @Override
     public void applyEffect() {
         //implement function;
+        shieldStartTime = System.currentTimeMillis();
+        player.activateShield(shieldDuration);
+        
+        // Visual feedback
+        player.setShieldActive(true);
+    
     }
+
+    public void setPlayer(Player p){
+        this.player = p;
+    }
+
+    // @Override
+    // public void removeEffect(Player player, GamePanel gamePanel) {
+    //     // Handled automatically by Player class after duration
+    // }
 
     public void update(){
         if (!jp.isVisible()) return;
