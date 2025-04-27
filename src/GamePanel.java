@@ -192,6 +192,7 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         for (PowerUp pu : powerups) {
             pu.draw(imageContext);
         }
+        
         flyingEnemy.draw(imageContext);
 
         
