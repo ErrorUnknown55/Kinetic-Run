@@ -82,7 +82,7 @@ public class PlatformGen {
         int imageSize = x + imageWidth;
         if (imageSize < 0){
             // platform_num = ran.nextInt(13);
-            x=700;
+            x=900;
             // regenplatforms();
             // newPanelNeeded = true;
         }
