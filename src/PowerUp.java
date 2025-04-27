@@ -17,5 +17,6 @@ public abstract class PowerUp {
     public abstract int getWidth();
     public abstract int getHeight();
     public abstract Rectangle2D.Double getBoundingRectangle();
+    public abstract void setPlayer(Player player);
 
 }

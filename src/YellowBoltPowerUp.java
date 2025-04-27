@@ -12,6 +12,7 @@ public class YellowBoltPowerUp extends PowerUp {
     private Image yellowB;
     private int x,y,width,height,dx;
     private JPanel jp;
+    private Player player;
 
     public YellowBoltPowerUp(String effect, float duration,JPanel p, int x, int y) {
         super(effect, duration);
@@ -29,6 +30,9 @@ public class YellowBoltPowerUp extends PowerUp {
 
     public void applyEffect() {
         //implement function;
+    }
+    public void setPlayer(Player p){
+        this.player = p;
     }
 
     public void update(){
