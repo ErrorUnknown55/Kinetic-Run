@@ -1,10 +1,12 @@
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
+import java.awt.Point;
 import java.awt.geom.Rectangle2D;
 import java.util.LinkedList;
 import java.util.List;
 import javax.swing.JPanel;
+import java.awt.Dimension;
 
 public class Enemy {
 
@@ -29,6 +31,9 @@ public class Enemy {
     private long startTime;
     private int duration = 25000; // 20 seconds in milliseconds
 
+    // Bezier Curve Motion Variables
+    private BezierCurveMotion bezierMotion;
+
     // Enemy Animation Sequences
     private Image[] floatingImages = new Image[4];
     private Image[] flyingImages = new Image[4];
@@ -40,31 +45,78 @@ public class Enemy {
     private List<Projectile> projectiles;
     
     private long lastShotTime = 0;
-    private long shootingInterval = 1500; // Shoot every 1.5 seconds (adjust as needed)
+    private long shootingInterval = 3500; // Shoot every 1.5 seconds (adjust as needed)
     private Player targetPlayer; // Reference to the player
 
+    private int spikeySideToSideCount = 0;
+    private int maxSideToSide = 2; // Number of side-to-side movements
+    private boolean spikeyMovingLeft = true; // To control the direction of Bezier
+
     private JPanel p;
+    private Dimension dimension;
+
+    private boolean isFrozen = false;
+    private int frozenSpeed = 0; // When frozen
+
+    
 
     public Enemy(int x, int y, int type, JPanel panel, Player player) {
         // Enemy position and type
-        this.eX = x;
-        this.eY = y;
+        // this.eX = x;
+        // this.eY = y;
         this.initialY = y;
         this.currentType = type;
         this.p = panel;
-
-        // Initialize Sine Wave Motion for vertical movement
-        this.verticalMotion = new SineWaveMotion(panel);
-        verticalMotion.setAmplitudeFactor(60); // Adjust for desired vertical range
-        verticalMotion.setFrequencyFactor(1.5); // Adjust for desired vertical speed
+        dimension = panel.getSize();
+        // System.out.println("dimension.width: " + dimension.width);
 
         this.startTime = System.currentTimeMillis();
 
         this.projectiles = new LinkedList<>();
         this.targetPlayer = player;
+
+        // Initialize motion based on enemy type
+        if (currentType == 1 || currentType == 2) { // Flying types
+            // Initialize Sine Wave Motion for vertical movement
+            this.eX = 800;
+            // this.eY = y;
+            this.verticalMotion = new SineWaveMotion(panel);
+            verticalMotion.setAmplitudeFactor(60); // Adjust for desired vertical range
+            verticalMotion.setFrequencyFactor(1.5); // Adjust for desired vertical speed
+
+            // Initialize eY based on initial sine wave position
+            verticalMotion.update(); // Call update once to get the initial y
+            this.eY = initialY - verticalMotion.getY();
+
+            updateAnimation(); // Initialize the animation frame
+        } else if (currentType == 3) { // Spikey type
+            // Define control points for the Bezier curve (adjust these as needed)
+            Point p0 = new Point(830, 545 + 10); // Starting position, had to be manually set
+            Point p1 = new Point(800 / 2 + 10, 545 + 10); // Control point 1
+            Point p2 = new Point(0, 545 + 10); // Ending position (can be adjusted for looping)
+            this.bezierMotion = new BezierCurveMotion(panel, this, p0, p1, p2);
+            this.bezierMotion.activate();
+            this.bezierMotion.update();
+            this.eX = p0.x;
+            this.eY = p0.y;
+            // System.out.println("spawn spike: " + eX+"  "+eY);
+        }else {
+            this.eX=x;
+            this.eY=y;
+        }
+        
         
         // Load enemy images based on type
         loadEnemyImages();
+    }
+
+    public void setShootingInterval(long num){
+        this.shootingInterval=num;
+    }
+
+    // Add this method
+    public void setFrozen(boolean frozen) {
+        this.isFrozen = frozen;
     }
 
     private void loadEnemyImages() {
@@ -92,6 +144,12 @@ public class Enemy {
         // Load Walking Enemy Image (only one image provided)
         walkingImages[0] = ImageManager.loadImage("images/enemies/enemyWalking_1.png");
     }
+    public void setX(int x){
+        this.eX = x;
+    }
+    public void setY(int y){
+        this.eY = y;
+    }
 
     public int getX() {
         return eX;
@@ -116,6 +174,7 @@ public class Enemy {
     // Draw the enemy with appropriate image based on type
     public void draw(Graphics2D g2d) {
         Image currentImage = getCurrentImage();
+        // System.out.println("drawn y: " + eY);
         g2d.drawImage(currentImage, eX, eY, eWidth, eHeight, null);
 
         for (Projectile projectile : projectiles) {
@@ -147,6 +206,9 @@ public class Enemy {
         long currentTime = System.currentTimeMillis();
         long elapsedTime = currentTime - startTime;
 
+        if (isFrozen) return; // Skip movement if frozen
+        
+
         if (currentType == 1 || currentType == 2) { // Only move flying types
 
             // Horizontal movement for 10 seconds
@@ -166,15 +228,14 @@ public class Enemy {
                 // Vertical sine wave motion
                 verticalMotion.update();
                 eY = initialY - verticalMotion.getY(); // Subtract because SineWaveMotion's Y increases downwards
+                // System.out.println("y: " + eY);
+                // Shooting logic
+                if (elapsedTime < duration) { // Only shoot during the defined period
+                    shoot(p); // Cast to JPanel
+                }
             } else {
-                // After 10 seconds, you can define different behavior if needed
-                // For now, let's just continue the right-to-left movement
+                // After the duration, continue horizontal movement
                 eX -= eSpeed;
-            }
-
-            // Shooting logic
-            if (elapsedTime < duration) { // Only shoot during the 20-second period
-                shoot(p); // Cast to JPanel
             }
 
             // Update projectiles
@@ -189,9 +250,46 @@ public class Enemy {
 
             // Update animation frame
             updateAnimation();
+        } else if (currentType == 3) { // Spikey type
+            // Update Bezier curve motion
+            if (bezierMotion != null && bezierMotion.isActive()) {
+                bezierMotion.update();
+                this.eX = (int) bezierMotion.getCurrentPoint().getX();
+                this.eY = (int) bezierMotion.getCurrentPoint().getY();
+                // Check if Bezier motion is complete (approximately)
+                if (spikeyMovingLeft && this.eX <= 0) {
+                    spikeyMovingLeft = false;
+                    spikeySideToSideCount++;
+                    // Define Bezier curve to move back to the right
+                    Point p0 = new Point(this.eX, this.eY);
+                    Point p1 = new Point(800 / 2, 545 + 10); // Control point slightly down
+                    Point p2 = new Point(830, 545 + 10);
+                    this.bezierMotion = new BezierCurveMotion(p, this, p0, p1, p2);
+                    this.bezierMotion.activate();
+                } else if (!spikeyMovingLeft && this.eX >= 800) {
+                    spikeyMovingLeft = true;
+                    spikeySideToSideCount++;
+                    // Define Bezier curve to move back to the left
+                    Point p0 = new Point(this.eX, this.eY);
+                    Point p1 = new Point(800 / 2, 545 + 10); // Control point slightly up
+                    Point p2 = new Point(0, 545 + 10);
+                    this.bezierMotion = new BezierCurveMotion(p, this, p0, p1, p2);
+                    this.bezierMotion.activate();
+                }
+
+                if (spikeySideToSideCount >= maxSideToSide * 2) { // Multiply by 2 because one side-to-side is left then right
+                    bezierMotion.deActivate();
+                }
+            } else {
+                // Once Bezier motion is done, move to the left
+                eX -= eSpeed;
+            }
+            // Spikey enemies do not shoot projectiles
+            updateAnimation(); // Still animate the spikey enemy
         } else {
-            // Default horizontal movement for non-flying enemies
+            // Default horizontal movement for other enemy types
             eX -= eSpeed;
+            updateAnimation();
         }
     
     }
@@ -219,14 +317,20 @@ public class Enemy {
     }
 
     public void shoot(JPanel panel) {
-        long currentTime = System.currentTimeMillis();
-        if (currentTime - lastShotTime > shootingInterval) {
-            Projectile projectile = new Projectile(panel, targetPlayer);
-            projectile.setXPos(eX + eWidth / 2); // Start from the center of the enemy
-            projectile.setYPos(eY + eHeight / 2);
-            projectile.activate();
-            projectiles.add(projectile);
-            lastShotTime = currentTime;
+
+        if (isFrozen) return;
+
+        if (currentType == 1 || currentType == 2) {
+            long currentTime = System.currentTimeMillis();
+            if (currentTime - lastShotTime > shootingInterval) {
+                Projectile projectile = new Projectile(panel, targetPlayer);
+                projectile.setXPos(eX + eWidth / 2); // Start from the center of the enemy
+                projectile.setYPos(eY + eHeight / 2);
+                projectile.activate();
+                projectiles.add(projectile);
+                lastShotTime = currentTime;
+            }
         }
+        
     }
 }

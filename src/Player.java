@@ -1,7 +1,9 @@
 import java.awt.Graphics2D;
+import java.awt.Color;
 import java.awt.Image;
 import java.awt.geom.Rectangle2D;
 import java.util.List;
+import java.awt.image.BufferedImage;
 
 public class Player {
     
@@ -34,6 +36,26 @@ public class Player {
     //Platforms
     private List<PlatformGen> platforms;
 
+    // Tinting variables for flashing red
+    private boolean isFlashingRed = false;
+    private long flashStartTime;
+    private long flashDuration = 500;
+    private int flashInterval = 100;
+    private int flashCount = 0;
+    private int totalFlashes = 3;
+    private boolean redTinted = false;
+    private BufferedImage currentBufferedImage;
+    private BufferedImage currentBaseImage;
+    private RedTintEffect redTintEffect;  // Create the tint effect
+    private boolean isFlashingSequenceActive = false;
+
+    private boolean isInvincible = false;
+    private long invincibilityStartTime;
+    private long invincibilityDuration = 2000; // 2 seconds of invincibility
+
+    private boolean shieldActive = false;
+    private long shieldEndTime;
+
     public Player(int x, int y, List<PlatformGen> plf) {
         // Player position
         this.pX = x;
@@ -63,7 +85,12 @@ public class Player {
 
         // Initialize platforms
         this.platforms = plf;
+
+        redTintEffect = new RedTintEffect(255);
+
+        currentBufferedImage = ImageManager.toBufferedImage(standImage);
         
+        currentBaseImage = ImageManager.toBufferedImage(standImage);
 
     }
 
@@ -83,7 +110,30 @@ public class Player {
         return pHeight;
     }
 
+    public void activateShield(long duration) {
+        this.shieldActive = true;
+        this.shieldEndTime = System.currentTimeMillis() + duration;
+        this.isInvincible = true; // Also set invincible
+    }
+    
+    public void setShieldActive(boolean active) {
+        this.shieldActive = active;
+        if (!active) {
+            this.isInvincible = false;
+        }
+    }
+    
+    public boolean hasShield() {
+        return shieldActive && System.currentTimeMillis() < shieldEndTime;
+    }
+
     public void update() {
+
+        if (shieldActive && System.currentTimeMillis() > shieldEndTime) {
+            shieldActive = false;
+            isInvincible = false;
+        }
+
         //Apply Gravity if not on the ground
         if(!isOnGround) {
             verticalVelocity += gravity;
@@ -123,32 +173,122 @@ public class Player {
             verticalVelocity = 0;
             isJumping = false; // Reset jumping state
         }
+        // Handle flashing red effect - REPLACE with this:
+        if (isFlashingRed) {
+            long currentTime = System.currentTimeMillis();
+            long elapsed = currentTime - flashStartTime;
+            
+            if (elapsed < flashDuration) {
+                // Calculate flash state based on elapsed time
+                int flashState = (int)(elapsed / flashInterval) % 2;
+                redTinted = (flashState == 0);
+                
+                if (redTinted) {
+                    applyRedTint();
+                } else {
+                    resetTint();
+                }
+            } else {
+                endFlash();
+            }
+        }
+        // Handle invincibility timer
+        if (isInvincible) {
+            long currentTime = System.currentTimeMillis();
+            if (currentTime - invincibilityStartTime > invincibilityDuration) {
+                isInvincible = false;
+                // Optional: Add a visual effect when invincibility ends
+            }
+        }
     }
 
     // Draw the player with appropriate image based on movement
-    public void draw(Graphics2D g2d) {
-        Image currentImage = standImage; // Default standing image
+    // public void draw(Graphics2D g2d) {
+    //     Image currentImage = standImage; // Default standing image
+    //     //Image currentImage = getCurrentImage();
         
-        // Check movement direction and select appropriate image
-        switch(currentDirection) {
-            case 4: // Left
-            case 6: // Right
-                // Animate walking
-                currentImage = walkImages[walkFrame];
-                soundManager.playClip("walk", true);
-                break;
-            case 5: // Duck
-                currentImage = duckImage;
-                break;
-            case 8: // Jump
-                currentImage = jumpImages[0]; // Use first jump frame
-                break;
-            default:
-                currentImage = standImage;
-                soundManager.stopClip("walk");
+    //     // Check movement direction and select appropriate image
+    //     switch(currentDirection) {
+    //         case 4: // Left
+    //         case 6: // Right
+    //             // Animate walking
+    //             // currentImage = walkImages[walkFrame];
+    //             soundManager.playClip("walk", true);
+    //             break;
+    //         case 5: // Duck
+    //             // currentImage = duckImage;
+    //             break;
+    //         case 8: // Jump
+    //             // currentImage = jumpImages[0]; // Use first jump frame
+    //             break;
+    //         default:
+    //             // currentImage = standImage;
+    //             soundManager.stopClip("walk");
+    //     }
+        
+    //     g2d.drawImage(currentImage, pX, pY, pWidth, pHeight, null);
+    // }
+
+    private void endFlash() {
+        isFlashingRed = false;
+        isFlashingSequenceActive = false;
+        redTinted = false;
+        resetTint();
+    }
+
+    public boolean isInvincible() {
+        return isInvincible;
+    }
+    public void debugJump() {
+        System.out.println("Max jump height: " + calculateMaxJumpHeight() + " pixels");
+    }
+    
+    private int calculateMaxJumpHeight() {
+        // Use your actual physics values
+        float testVelocity = -jumpForce; // Note: Negative if y increases downward
+        float testY = 0;
+        int frames = 0;
+        int peakHeight = 0;
+        
+        while (testVelocity < 0) { // While moving upward
+            testY += testVelocity;
+            testVelocity += gravity; // Gravity should be positive if y increases downward
+            frames++;
+            
+            if (testY < peakHeight) { // Track lowest (highest) point
+                peakHeight = (int)testY;
+            }
+        }
+        return -peakHeight; // Return as positive number
+    }
+
+    public void draw(Graphics2D g2d) {
+        if (!isFlashingRed) {
+            switch (currentDirection) {
+                case 4: case 6: currentBaseImage = ImageManager.toBufferedImage(walkImages[walkFrame]);
+                soundManager.playClip("walk", true); break;
+                case 5: currentBaseImage = ImageManager.toBufferedImage(duckImage); break;
+                case 8: currentBaseImage = ImageManager.toBufferedImage(jumpImages[0]); break;
+                default: currentBaseImage = ImageManager.toBufferedImage(standImage); 
+                soundManager.stopClip("walk");break;
+            }
+        }
+    
+        Image currentImage = getCurrentImage();
+        if (!isInvincible || (System.currentTimeMillis() % 200) < 100) {
+            g2d.drawImage(currentImage, pX, pY, pWidth, pHeight, null);
         }
         
-        g2d.drawImage(currentImage, pX, pY, pWidth, pHeight, null);
+        // Optional: Draw an outline when invincible
+        if (isInvincible) {
+            g2d.setColor(new Color(255, 255, 255, 100)); // Semi-transparent white
+            g2d.drawRect(pX, pY, pWidth, pHeight); // Or use a more fancy effect
+        }
+        // g2d.drawImage(currentImage, pX, pY, pWidth, pHeight, null);
+        if (hasShield()) {
+            g2d.setColor(new Color(100, 100, 255, 100)); // Semi-transparent blue
+            g2d.fillOval(pX - 5, pY - 5, pWidth + 10, pHeight + 10);
+        }
     }
 
     // Control the player movement
@@ -255,5 +395,71 @@ public class Player {
 
     public Rectangle2D.Double getBoundingRectangle() {
         return new Rectangle2D.Double(pX, pY, pWidth, pHeight);
+    }
+
+    private Image getCurrentImage() {
+        if (isFlashingRed && redTinted && currentBufferedImage != null) {
+            System.out.println("Returning tinted image"); // DEBUG
+            return currentBufferedImage;
+        }
+    
+        if (!isFlashingRed) { // Only select base image if not flashing
+            switch (currentDirection) {
+                case 4: case 6: return walkImages[walkFrame];
+                case 5: return duckImage;
+                case 8: return jumpImages[0];
+                default: return standImage;
+            }
+        }
+        return currentBufferedImage; // Should not reach here if flashing and tinted
+    }
+
+    public void flashRed() {
+        if (!isFlashingSequenceActive && !isInvincible) {
+            isFlashingRed = true;
+            isFlashingSequenceActive = true;
+            isInvincible = true; // Start invincibility
+            invincibilityStartTime = System.currentTimeMillis();
+            flashStartTime = System.currentTimeMillis();
+            // redTinted = false;
+            flashCount = 0;
+            System.out.println("Starting flash sequence");
+            // System.out.println("flashRed() called");
+        }
+    }
+    public boolean isFlashingRed() {
+        return isFlashingSequenceActive;
+    }
+
+    private void applyRedTint() {
+        BufferedImage sourceImage = getSourceBufferedImage();
+        System.out.println("getSourceBufferedImage(): " + sourceImage); // DEBUG
+        if (sourceImage != null) {
+            currentBufferedImage = redTintEffect.apply(sourceImage);
+            System.out.println("currentBufferedImage after tint: " + currentBufferedImage); // DEBUG
+        }
+    }
+
+    private void resetTint() {
+        currentBufferedImage = ImageManager.toBufferedImage(getCurrentImage());
+        System.out.println("resetTint() called"); // DEBUG
+    }
+
+    // private BufferedImage getSourceBufferedImage() {
+    //     switch (currentDirection) {
+    //         case 4:
+    //         case 6:
+    //             return ImageManager.toBufferedImage(walkImages[walkFrame]);
+    //         case 5:
+    //             return ImageManager.toBufferedImage(duckImage);
+    //         case 8:
+    //             return ImageManager.toBufferedImage(jumpImages[0]);
+    //         default:
+    //             return ImageManager.toBufferedImage(standImage);
+    //     }
+    // }
+
+    private BufferedImage getSourceBufferedImage() {
+        return currentBaseImage;
     }
 }

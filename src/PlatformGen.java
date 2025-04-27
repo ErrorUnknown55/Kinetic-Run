@@ -60,6 +60,10 @@ public class PlatformGen {
         }
     }
 
+    public void setX(int x){
+        this.x = x;
+    }
+
     public void drawPlatforms(Graphics2D g){
         
         // for (int i = 0; i < xValues.length; i++) {
@@ -80,12 +84,12 @@ public class PlatformGen {
         x = x - dx;
         imageWidth = platformImages[platform_num].getWidth(panel);
         int imageSize = x + imageWidth;
-        if (imageSize < 0){
-            // platform_num = ran.nextInt(13);
-            x=700;
-            // regenplatforms();
-            // newPanelNeeded = true;
-        }
+        // if (imageSize < 0){
+        //     // platform_num = ran.nextInt(13);
+        //     x=700;
+        //     // regenplatforms();
+        //     // newPanelNeeded = true;
+        // }
     }
     public int getX() {
         return x;
