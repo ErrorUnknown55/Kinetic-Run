@@ -68,25 +68,14 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         this.scrWidth =  scrW;
         this.scrHeight = scrH;
 
-        
-
-        
-        
         addKeyListener(this);
         setFocusable(true);
         requestFocusInWindow();
 
         soundManager = SoundManager.getInstance();
-        
-
-
-        // soundManager = SoundManager.getInstance();
-        
-
+            
         startTime = 0;
         mapcount = 1;
-
-
 
         platforms = new LinkedList<>();
         pf = new PlatformGen(this,450, "large");
@@ -113,38 +102,22 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
 
         flyingEnemy = new Enemy(700, 350, 2, this, player);
 
-
-    
-        
         image = new BufferedImage(900, 700, BufferedImage.TYPE_INT_RGB);
 
         //Tile map manager
         tileMapManager =  new TileMapManager(this);
 
         gameFont = new  Font("Arial", Font.BOLD, 24);  
-
     }
 
     public void createGameEntities() {
         
         bgImage = new Background(this, "images/background/backgroundColorForest.png", 98);
         bgImage.setY(0);
-        platform = new Background(this, "images/platform/greentiles/ground-platform.png", 98);
-        platform.setY(545+player.getHeight());
-
-        // mapFile = "maps/map"+mapcount+".txt";
-        // mapFile = "maps/map2.txt";
-        // try {
-        //     //Load Tile Map
-        //     tileMap = tileMapManager.loadMap(mapFile);
-            
-            
-
-        // } catch (IOException e) {
-        //     System.err.println("Error loading map:" +  e.getMessage());
-        //     e.printStackTrace();
-        // }
         
+        platform = new Background(this, "images/platform/greentiles/ground-platform.png", 98);
+       
+        platform.setY(545+player.getHeight());
 
     }
     
