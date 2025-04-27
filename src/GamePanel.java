@@ -151,9 +151,9 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         
         // Draw timer
         imageContext.setFont(gameFont);
-        imageContext.setColor(Color.WHITE);
+        imageContext.setColor(Color.BLACK);
         String timeText = "Time: " + formatTime(getElapsedTime());
-        imageContext.drawString(timeText, scrWidth - 150, 30);
+        imageContext.drawString(timeText, scrWidth - 200, 30);
         
         Graphics2D g2 = (Graphics2D) getGraphics();
         g2.drawImage(image, 0, 0, scrWidth, scrHeight, null);
