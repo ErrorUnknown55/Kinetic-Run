@@ -19,7 +19,7 @@ public class Player {
     private boolean isOnGround = false;
     private float gravity = 0.5f;
     private float verticalVelocity = 0;
-    private float jumpForce = -12f;
+    private float jumpForce = -14f;
 
     //Sound
     private SoundManager soundManager;
