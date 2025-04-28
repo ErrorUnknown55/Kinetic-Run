@@ -12,6 +12,7 @@ public class RedPillPowerUp extends PowerUp {
     private Image redP;
     private int x,y,width,height,dx;
     private JPanel jp;
+    private GamePanel gp;
     private Player player;
 
     public RedPillPowerUp(String effect, float duration,JPanel p, int x, int y) {
@@ -23,6 +24,7 @@ public class RedPillPowerUp extends PowerUp {
         height = 21;
         dx = 6;
         jp = p;
+        gp = (GamePanel) p;
 
         redP = ImageManager.loadImage("images/powerups/pill_red.png");
     }
@@ -31,7 +33,10 @@ public class RedPillPowerUp extends PowerUp {
     public void applyEffect() {
         // Implement the effect of the red pill power-up here
         // System.out.println("Applying red pill effect: " + effect + " for " + duration + " seconds.");
+        player.addLife();
+        gp.updateHearts();
     }
+    
     public void setPlayer(Player p){
         this.player = p;
     }

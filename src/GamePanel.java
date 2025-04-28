@@ -4,6 +4,7 @@ import java.awt.event.KeyListener;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.*;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -61,7 +62,7 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
     private Random random = new Random();
 
     private long enemySpawnTimer = 0;
-    private long enemySpawnInterval = 5000;
+    private long enemySpawnInterval = 10000;
 
     private int powerUpSpawnCounter = 0;
     private final int POWERUP_SPAWN_INTERVAL = 2; // Every 2 platforms
@@ -74,6 +75,36 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
 
     //need to remove
     private Enemy flyingEnemy;
+
+    // Timer variables
+    private long startGameTime;  
+    private long pausedTime;     
+    private long totalPausedTime = 0;
+    private boolean timerRunning = false;
+
+    private int currentLevel = 1;
+    private boolean levelChangeNeeded = false;
+    private int score, levelCompletionXPosition;
+
+    private boolean isWaterLevel = false;
+
+    private boolean hasSwitchedToWater = false;
+
+    private boolean ground;
+
+    private List<Heart> hearts = new ArrayList<>();
+
+    private boolean gameOver = false;
+    private BufferedImage gameOverImage;
+    private long gameOverTime; // To track when game over occurred
+    private boolean showRestartPrompt = false;
+    private final long PROMPT_DELAY = 2000; // 2 seconds before showing restart prompt
+
+    private float enemySpawnMultiplier = 1.0f; // Starts at normal rate
+    private final float ENEMY_SPAWN_INCREASE_RATE = 0.1f; // 10% increase per interval
+    private long lastDifficultyIncreaseTime = 0;
+    private final long DIFFICULTY_INTERVAL = 30000;
+
 
 
     public GamePanel(int scrW,  int scrH) {
@@ -138,7 +169,47 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         tileMapManager =  new TileMapManager(this);
 
         gameFont = new  Font("Arial", Font.BOLD, 24);  
+        gameOverImage = ImageManager.loadBufferedImage("images/player/GameOver.png");
 
+    }
+
+    public void setWaterLevel(boolean waterLevel) {
+        this.isWaterLevel = waterLevel;
+        
+        if (waterLevel) {
+            // Load sea background
+            bgImage = new Background(this,"images/background/underwaterBackground-2.png", 98);
+            bgImage.setY(0);
+            // Notify player and enemies
+            player.setWaterLevel(true);
+            // Remove non-water enemies and convert existing ones
+            List<Enemy> toRemove = new LinkedList<>();
+            for (Enemy enemy : enemies) {
+                if (enemy.getType() != 4) {
+                    toRemove.add(enemy);
+                } else {
+                    enemy.setWaterLevel(true);
+                }
+            }
+            enemies.removeAll(toRemove);
+            platforms.clear();
+            platform=null;
+
+        } else {
+            // Revert to normal visuals
+            bgImage = new Background(this,"images/background/backgroundColorForest.png",98);
+            bgImage.setY(0);
+            player.setWaterLevel(false);
+            for (Enemy enemy : enemies) {
+                enemy.setWaterLevel(false);
+            }
+        }
+    }
+    public void endLevel() {
+        currentLevel = currentLevel + 1;
+        levelChangeNeeded = true;
+        
+        // Every 3 levels is a water level
     }
 
     public void createGameEntities() {
@@ -148,67 +219,104 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         platform = new Background(this, "images/platform/greentiles/ground-platform.png", 98);
         platform.setY(545+player.getHeight());
 
-        // mapFile = "maps/map"+mapcount+".txt";
-        // mapFile = "maps/map2.txt";
-        // try {
-        //     //Load Tile Map
-        //     tileMap = tileMapManager.loadMap(mapFile);
-            
-            
-
-        // } catch (IOException e) {
-        //     System.err.println("Error loading map:" +  e.getMessage());
-        //     e.printStackTrace();
-        // }
-        
-
     }
     
     public void gameRender() {
         //Creates a Graphics2D obj for the BufferedImage
         Graphics2D imageContext = (Graphics2D) image.getGraphics();
 
-        imageContext.setBackground(Color.BLACK);
-        imageContext.fillRect(0, 0, image.getWidth(), image.getHeight());
-        
-        //Draw background 
-        if(bgImage != null) {
-            bgImage.update();
-            bgImage.draw(imageContext);
+        if (!gameOver){
+            imageContext.setBackground(Color.BLACK);
+            imageContext.fillRect(0, 0, image.getWidth(), image.getHeight());
+            
+            // Draw background - modified for water/land levels
+            
+            // Add water overlay effect for water levels
+            if (isWaterLevel) {
+                imageContext.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.3f));
+                imageContext.setColor(new Color(0, 100, 200, 50));
+                imageContext.fillRect(0, 0, scrWidth, scrHeight);
+                imageContext.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
+            }
+            
+            //Draw background 
+            if(bgImage != null) {
+                bgImage.update();
+                bgImage.draw(imageContext);
+            }
+
+
+            if(platform != null){
+                platform.update();
+                platform.draw(imageContext);
+            }
+
+
+            //Draw tile map
+            if(tileMap != null) {
+                tileMap.draw(imageContext);
+            }
+
+            player.draw(imageContext);
+
+
+            // System.out.println("Loading map:" + mapFile);
+
+            // pf.drawPlatforms(imageContext);
+            // pf2.drawPlatforms(imageContext);
+            // pf3.drawPlatforms(imageContext);;
+            for (PlatformGen platform : platforms) {
+                platform.drawPlatforms(imageContext);
+            }
+
+            for (PowerUp pu : powerups) {
+                pu.draw(imageContext);
+            }
+
+            for (Enemy enemy : enemies) {
+                enemy.draw(imageContext); // Cast to Graphics2D for the draw method
+            }
+
+            for (Heart heart : hearts) {
+                heart.draw(imageContext);
+            }
+            // flyingEnemy.draw(imageContext);
+
+            // Draw timer
+            imageContext.setFont(gameFont);
+            imageContext.setColor(Color.BLACK);
+            String timeText = "Time: " + formatTime(getElapsedTime());
+            imageContext.drawString(timeText, scrWidth - 200, 30);
         }
-
-
-        if(platform != null){
-            platform.update();
-            platform.draw(imageContext);
+        else{
+            // Darken the game screen
+                imageContext.setColor(new Color(0, 0, 0, 180));
+                imageContext.fillRect(0, 0, 900, 700);
+                
+                // Draw game over image
+                int goWidth = 400;
+                int goHeight = 200;
+                int goX = (scrWidth - goWidth) / 2;
+                int goY = (scrHeight - goHeight) / 3;
+                imageContext.drawImage(gameOverImage, goX, goY, goWidth, goHeight, null);
+                
+                // Show restart prompt after delay
+                if (showRestartPrompt) {
+                    imageContext.setFont(new Font("Arial", Font.BOLD, 24));
+                    imageContext.setColor(Color.WHITE);
+                    String prompt = "Press R to Restart or ESC to Quit";
+                    int promptWidth = imageContext.getFontMetrics().stringWidth(prompt);
+                    imageContext.drawString(prompt, (scrWidth - promptWidth)/2, goY + goHeight + 50);
+                }
+                
+                // Show final score
+                imageContext.setFont(new Font("Arial", Font.BOLD, 20));
+                imageContext.setColor(Color.YELLOW);
+                String scoreText = "Final Score: " + score;
+                int scoreWidth = imageContext.getFontMetrics().stringWidth(scoreText);
+                imageContext.drawString(scoreText, (scrWidth - scoreWidth)/2, goY + goHeight + 100);
+            
         }
-
-
-        //Draw tile map
-        if(tileMap != null) {
-            tileMap.draw(imageContext);
-        }
-
-        player.draw(imageContext);
-
-
-        // System.out.println("Loading map:" + mapFile);
-
-        // pf.drawPlatforms(imageContext);
-        // pf2.drawPlatforms(imageContext);
-        // pf3.drawPlatforms(imageContext);;
-        for (PlatformGen platform : platforms) {
-            platform.drawPlatforms(imageContext);
-        }
-
-        for (PowerUp pu : powerups) {
-            pu.draw(imageContext);
-        }
-
-        for (Enemy enemy : enemies) {
-            enemy.draw(imageContext); // Cast to Graphics2D for the draw method
-        }
-        // flyingEnemy.draw(imageContext);
 
         
         Graphics2D g2 = (Graphics2D) getGraphics();
@@ -220,7 +328,7 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
               
     }
 
-    // In GamePanel.java
+    
     private void checkPlatformCollisions() {
         player.setIsOnGround(false); // Assume not on ground until collision check
         
@@ -249,7 +357,15 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
             if (enemy.collidesWith(player) && !player.isInvincible() && !player.hasShield()) {
                 if (!player.isFlashingRed()) {  // Add this check
                     player.flashRed();
+                    player.loseLife();
+                    updateHearts();
+                    System.out.println("Player hit! Lives: " + player.getLives());
                     System.out.println("Player collided with enemy - flashing!");
+
+                    if (player.isDead()) {
+                        // Handle game over
+                        gameOver = true;
+                    }
                 }
                 enemiesToRemove.add(enemy);
             }
@@ -265,20 +381,26 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
 
         PlatformGen tempPlatform;
         PlatformGen newestPlatform = null;
-        // flyingEnemy.update();
-        // // Check for collisions between enemy projectiles and the player
-        // List<Projectile> enemyProjectiles = flyingEnemy.getProjectiles();
-        // List<Projectile> hitProjectiles = new LinkedList<>();
-        // for (Projectile projectile : enemyProjectiles) {
-        //     if (projectile.getBoundingRectangle().intersects(player.getBoundingRectangle())) {
-        //         // Handle player being hit (e.g., decrease health, game over)
-        //         System.out.println("Player hit by projectile!");
-        //         hitProjectiles.add(projectile); // Mark for removal
-        //     }
-        // }
-        // enemyProjectiles.removeAll(hitProjectiles); // Remove hit projectiles
 
-        // Update all enemies
+        if (gameOver) {
+            // Show restart prompt after delay
+            if (System.currentTimeMillis() - gameOverTime > PROMPT_DELAY) {
+                showRestartPrompt = true;
+            }
+            return; // Skip normal game updates
+        }
+
+        if (levelChangeNeeded) {
+            loadLevel(currentLevel);
+            levelChangeNeeded = false;
+            return; // Skip normal update for this frame
+        }
+
+        if (player.isDead()) {
+            gameOver = true;
+            // Handle game over logic
+        }
+
         List<Projectile> hitProjectiles = new LinkedList<>();
         for (Enemy enemy : enemies) {
             enemy.update();
@@ -289,6 +411,8 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
                     // Handle player being hit
                     if (!player.isFlashingRed()) {  // Add this check
                         player.flashRed();
+                        player.loseLife();
+                        updateHearts();
                         System.out.println("Player collided with enemy - flashing!");
                     }
                     System.out.println("Player hit by projectile!");
@@ -299,6 +423,7 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         }
 
         checkEnemyCollisions(); // Check for player-enemy collisions
+        checkForWaterLevelTransition();
 
         if(bgImage != null)
             bgImage.setAutoScroll(isRunning);
@@ -393,7 +518,7 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
                         platforms.add(tempPlatform);
                         platformAdded = true;
                         
-                        if (random.nextDouble() < 0.2) {
+                        if (random.nextDouble() < 0.5) {
                             spawnPowerUp(tempPlatform);
                         }
                         
@@ -419,245 +544,41 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
             platformDelayCounter = 0;
         }
         platformDelayCounter++;
-        // if (platformDelayCounter >= platformSpawnDelay) {
-        //     if (!platforms.isEmpty()) {
-        //         PlatformGen lastPlatform = platforms.getLast();
-                
-        //         // Calculate new platform position
-        //         int minJumpHeight = 100;
-        //         int maxJumpHeight = 200;
-        //         int horizontalSpacing = 300 + random.nextInt(200);
-                
-        //         int newPlatformY = lastPlatform.getY() - (minJumpHeight + random.nextInt(maxJumpHeight - minJumpHeight));
-        //         newPlatformY = Math.max(120, Math.min(scrHeight - 100, newPlatformY));
-                
-        //         int newPlatformX = lastPlatform.getX() + horizontalSpacing;
-        //         String[] sizes = {"small", "medium", "large"};
-        //         String newSize = sizes[random.nextInt(sizes.length)];
-                
-        //         tempPlatform = new PlatformGen(this, newPlatformY, newSize);
-        //         tempPlatform.setX(newPlatformX);
-                
-        //         // Add after basic validation
-        //         if (newPlatformX > lastPlatform.getX() + 200) { // Ensure minimum spacing
-        //             platforms.add(tempPlatform);
-                    
-        //             // Occasional power-up
-        //             if (random.nextDouble() < 0.2) {
-        //                 spawnPowerUp(tempPlatform);
-        //             }
-        //         }
-        //     }
-        //     platformDelayCounter = 0;
-        // }
-        // platformDelayCounter++;
-
-
-// THIS ONE WORKS BUT NOT PERFECTLY
-        // if (platformDelayCounter >= platformSpawnDelay) {
-        //     if (!platforms.isEmpty()) {
-        //         PlatformGen lastPlatform = platforms.getLast();
-                
-        //         // Calculate new platform position with better vertical variation
-        //         int minJumpHeight = 100;  // Minimum vertical space needed to jump
-        //         int maxJumpHeight = 200;  // Maximum vertical space player can jump
-        //         int horizontalSpacing = 300 + random.nextInt(200); // Space between platforms
-                
-        //         // Alternate between upward and downward jumps
-        //         boolean jumpUp = random.nextBoolean();
-        //         int newPlatformY;
-                
-        //         if (jumpUp) {
-        //             newPlatformY = lastPlatform.getY() - (minJumpHeight + random.nextInt(maxJumpHeight - minJumpHeight));
-        //         } else {
-        //             newPlatformY = lastPlatform.getY() + (minJumpHeight + random.nextInt(maxJumpHeight - minJumpHeight));
-        //         }
-                
-        //         // Keep platform within screen bounds
-        //         newPlatformY = Math.max(120, Math.min(scrHeight - 150, newPlatformY));
-                
-        //         int newPlatformX = lastPlatform.getX() + horizontalSpacing;
-        //         String[] sizes = {"small", "medium", "large"};
-        //         String newSize = sizes[random.nextInt(sizes.length)];
-                
-        //         tempPlatform = new PlatformGen(this, newPlatformY, newSize);
-        //         tempPlatform.setX(newPlatformX);
-                
-        //         // Check for overlaps with existing platforms
-        //         boolean validPlacement = true;
-        //         Rectangle2D.Double newRect = tempPlatform.getBoundingRectangle();
-                
-        //         for (PlatformGen existing : platforms) {
-        //             Rectangle2D.Double existingRect = existing.getBoundingRectangle();
-                    
-        //             // Check for direct overlap
-        //             if (newRect.intersects(existingRect)) {
-        //                 validPlacement = false;
-        //                 break;
-        //             }
-                    
-        //             // Ensure minimum vertical spacing (at least 50 pixels between platforms)
-        //             if (Math.abs(newRect.y - existingRect.y) < 50) {
-        //                 validPlacement = false;
-        //                 break;
-        //             }
-        //         }
-                
-        //         // Only add if valid position
-        //         if (validPlacement && newPlatformX > lastPlatform.getX() + 200) {
-        //             platforms.add(tempPlatform);
-                    
-        //             // Occasional power-up (20% chance)
-        //             if (random.nextDouble() < 0.2) {
-        //                 spawnPowerUp(tempPlatform);
-        //             }
-                    
-        //             System.out.println("Added platform at Y: " + newPlatformY + 
-        //                              " (Previous Y: " + lastPlatform.getY() + ")");
-        //         } else {
-        //             System.out.println("Skipped overlapping platform");
-        //         }
-        //     }
-        //     platformDelayCounter = 0;
-        // }
-        // platformDelayCounter++;
-
-
-
-        // if (platformDelayCounter >= platformSpawnDelay) {
-        //     int newPlatformY = 0; // Initialize
-        //     if (platforms.isEmpty()) {
-        //         // Spawn the first platform at a fixed Y
-        //         newPlatformY = 450;
-        //         tempPlatform = new PlatformGen(this, newPlatformY, "large");
-        //     } else {
-        //         // Get the Y coordinate of the last platform
-        //         int lastY = platforms.getLast().getY();
-        //         int lastHeight = platforms.getLast().getHeight();
-        //         int minNewY = lastY - targetJumpSpace - jumpSpaceVariance - lastHeight;
-        //         int maxNewY = lastY - targetJumpSpace + jumpSpaceVariance - lastHeight;
-        //         // Ensure the new platform doesn't go too high
-        //         newPlatformY = Math.max(120, random.nextInt(maxNewY - minNewY + 1) + minNewY);
-        //         // Randomly choose a size for the new platform
-        //         String[] sizes = {"small", "medium", "large"};
-        //         String newSize = sizes[random.nextInt(sizes.length)];
-        //         tempPlatform = new PlatformGen(this, newPlatformY, newSize);
-        //     }
-
-        //     boolean validPlacement = true;
-        //     Rectangle2D.Double newPlatformRect = tempPlatform.checkPlatformIntersect();
-        //     for (PlatformGen existingPlatform : platforms) {
-        //         Rectangle2D.Double existingPlatformRect = existingPlatform.checkPlatformIntersect();
-        //         // Check for direct overlap (both horizontal and vertical)
-        //         if (newPlatformRect.intersects(existingPlatformRect)) {
-        //             validPlacement = false;
-        //             break;
-        //         }
-        //         // Check for minimum vertical spacing
-        //         if (newPlatformRect.y < existingPlatformRect.y) { // newPlatform is above existing
-        //             if (newPlatformRect.y + newPlatformRect.height + minVerticalSpacing > existingPlatformRect.y) {
-        //                 validPlacement = false;
-        //                 break;
-        //             }
-        //         } else { // existingPlatform is above or at the same level as newPlatform
-        //             if (existingPlatformRect.y + existingPlatformRect.height + minVerticalSpacing > newPlatformRect.y) {
-        //                 validPlacement = false;
-        //                 break;
-        //             }
-        //         }
-        //         // Optional: Implement a minimum horizontal spacing if desired
-        //         int minHorizontalSpacing = 5; // Adjust this value as needed
-        //         if (newPlatformRect.y == existingPlatformRect.y) { // Only check horizontal spacing if at the same vertical level
-        //             if (newPlatformRect.x < existingPlatformRect.x) {
-        //                 if (newPlatformRect.x + newPlatformRect.width + minHorizontalSpacing > existingPlatformRect.x) {
-        //                     validPlacement = false;
-        //                     break;
-        //                 }
-        //             } else {
-        //                 if (existingPlatformRect.x + existingPlatformRect.width + minHorizontalSpacing > newPlatformRect.x) {
-        //                     validPlacement = false;
-        //                     break;
-        //                 }
-        //             }
-        //         }
-        //     }
-        //     System.out.println("size: " + platforms.size());
-        //     if (validPlacement) {
-        //         platforms.add(tempPlatform);
-        //         newestPlatform = tempPlatform;
-        //         System.out.println("New platform at Y: " + newPlatformY);
-        //         // Chance to spawn a power-up on the new platform
-                
-        //         if (random.nextDouble() < 0.4) {
-        //             spawnPowerUp(platforms.getLast());
-        //         }
-        //         // powerUpSpawnCounter++;
-        //         // boolean forceSpawn = powerUpSpawnCounter >= POWERUP_SPAWN_INTERVAL;
-        //         // boolean normalSpawn = random.nextDouble() < POWERUP_SPAWN_CHANCE;
-                
-        //         // if (forceSpawn || normalSpawn) {
-        //         //     spawnPowerUp(platforms.getLast());
-        //         //     powerUpSpawnCounter = 0; // Reset counter after spawn
-        //         // }
-        //         // Every 3 platforms OR 80% chance, spawn a power-up
-                
-        //     }
-            
-        //     // if (platforms.size() <= 4) {
-        //     //     spawnPowerUp(platforms.get(platforms.size()-1));
-        //     // }
-        //     // // Regular spawning logic after
-        //     // else {
-        //     //     // Only increment counter if no power-up exists
-        //     //     if (powerups.isEmpty()) {
-        //     //         powerUpSpawnCounter++;
-        //     //     }
-                
-        //     //     boolean shouldSpawn = powerUpSpawnCounter >= POWERUP_SPAWN_INTERVAL || 
-        //     //                          (powerups.isEmpty() && random.nextDouble() < POWERUP_SPAWN_CHANCE);
-                
-        //     //     if (shouldSpawn && (powerups.isEmpty() || 
-        //     //         powerups.getLast().getX() < scrWidth/2)) {
-        //     //         spawnPowerUp(platforms.get(1));
-        //     //         powerUpSpawnCounter = 0;
-        //     //     }
-        //     // }
-            
-            
-        //     platformDelayCounter = 0; // Reset the delay
-        // }
-        // platformDelayCounter++;
-
+    
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastDifficultyIncreaseTime > DIFFICULTY_INTERVAL) {
+            increaseDifficulty();
+            lastDifficultyIncreaseTime = currentTime;
+        }
         // Enemy spawning logic based on time
         enemySpawnTimer += 50; // Assuming 50ms per update (based on Thread.sleep)
         //can make spawn time a changeable variable for settings 
-        if (enemySpawnTimer >= enemySpawnInterval) {
+        if (enemySpawnTimer >= (enemySpawnInterval / enemySpawnMultiplier)) {
             spawnRandomEnemy();
             enemySpawnTimer = 0; // Reset the timer
         }
+        
+        if (player.isDead() && !gameOver) {
+            triggerGameOver();
+        }
+    }
 
-        // startTime = startTime + 1;
-        // if (startTime >= 50){
-        //     mapcount = mapcount + 1;
-        //     if (mapcount > 5){
-        //         mapcount = 1;
-        //     }
-        //     mapFile = "maps/map"+mapcount+".txt";
-        //     // mapFile = "maps/map3.txt";
-        //     try {
-        //         //Load Tile Map
-        //         System.out.println("Loading map:" + mapFile);
-        //         tileMap = tileMapManager.loadMap(mapFile);
-    
-        //     } catch (IOException e) {
-        //         System.err.println("Error loading map:" +  e.getMessage());
-        //         e.printStackTrace();
-        //     }
-        //     startTime = 0;
+    private void increaseDifficulty() {
+        enemySpawnMultiplier += ENEMY_SPAWN_INCREASE_RATE;
+        System.out.println("Difficulty increased! Spawn rate multiplier: " + enemySpawnMultiplier);
         
-        // }
-        // System.out.println("Game:" + startTime);
         
+    }
+
+    private void triggerGameOver() {
+        gameOver = true;
+        gameOverTime = System.currentTimeMillis();
+        showRestartPrompt = false;
+        soundManager.stopClip("forest-background");
+        soundManager.stopClip("water_transition");
+        soundManager.playClip("game_over", false);
+        isRunning = false;
+        System.out.println("tesing ");
     }
 
     public void run() {
@@ -675,14 +596,61 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
 
     private void spawnRandomEnemy() {
         Random random = new Random();
-        int enemyType = random.nextInt(4); // Generates a random number between 0 and 5 (inclusive)
+        int enemyType;
+        if (isWaterLevel) {
+            // Only spawn water-specific enemies (types 0 and 4)
+            enemyType = 4 + random.nextInt(4);
+            int x,y;
+            if (enemyType == 4){
+                x = -50;
+                y = random.nextInt(450) + 100;
+                System.out.println("scrWidth: " + scrWidth);
+                enemies.add(new Enemy(x, y, enemyType, this, player));
+                System.out.println("Spawning enemy of type: " + enemyType + " at X: " + x + ", Y: " + y);
+            }
+
+            if (enemyType == 5){
+                x = scrWidth + 50;
+                y = random.nextInt(450) + 100;
+                System.out.println("scrWidth: " + scrWidth);
+                enemies.add(new Enemy(x, y, enemyType, this, player));
+                System.out.println("Spawning enemy of type: " + enemyType + " at X: " + x + ", Y: " + y);
+            }
+
+            if (enemyType == 6){
+                x = random.nextInt(700);
+                y = scrHeight + 50;
+                System.out.println("scrWidth: " + scrWidth);
+                enemies.add(new Enemy(x, y, enemyType, this, player));
+                System.out.println("Spawning enemy of type: " + enemyType + " at X: " + x + ", Y: " + y);
+            }
+
+            if (enemyType == 7){
+                x = random.nextInt(700);
+                y = 0;
+                System.out.println("scrWidth: " + scrWidth);
+                enemies.add(new Enemy(x, y, enemyType, this, player));
+                System.out.println("Spawning enemy of type: " + enemyType + " at X: " + x + ", Y: " + y);
+            }
+            
+            
+        } else {
+            // Spawn regular enemies (types 0-3 as per your current code)
+            enemyType = random.nextInt(4); // Generates 0-3
+            int spawnX = 700;
+            int spawnY = 350;
+            System.out.println("scrWidth: " + scrWidth);
+            enemies.add(new Enemy(spawnX, spawnY, enemyType, this, player));
+            System.out.println("Spawning enemy of type: " + enemyType + " at X: " + spawnX + ", Y: " + spawnY);
+        }
+        // int enemyType = random.nextInt(4); // Generates a random number between 0 and 5 (inclusive)
         // int spawnY = random.nextInt(400) + 100; // Spawn Y within a certain range
         // int spawnX = scrWidth + 50; // Spawn off-screen to the right
-        int spawnX = 700;
-        int spawnY = 350;
-        System.out.println("scrWidth: " + scrWidth);
-        enemies.add(new Enemy(spawnX, spawnY, enemyType, this, player));
-        System.out.println("Spawning enemy of type: " + enemyType + " at X: " + spawnX + ", Y: " + spawnY);
+        // int spawnX = 700;
+        // int spawnY = 350;
+        // System.out.println("scrWidth: " + scrWidth);
+        // enemies.add(new Enemy(spawnX, spawnY, enemyType, this, player));
+        
     }
 
     private void spawnPowerUp(PlatformGen platform) {
@@ -691,27 +659,36 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         int powerUpX = platform.getX() + platform.getWidth() / 2 - 11; // Center on platform (assuming power-up width is 32)
         int powerUpY = platform.getY() - 21; // Place above platform (assuming power-up height is 32)
     
-        if (powerUpType < 0.7) {
-            newPowerUp = new BluePillPowerUp("test", 1,this,powerUpX, powerUpY);
-            newPowerUp.setPlayer(player);
+        if (powerUpType < 0.5) {
+            newPowerUp = new BlueShieldPowerUp("test", 1,this,powerUpX, powerUpY);
         } 
-        // else if (powerUpType < 0.7) { // 25% chance for Red Pill (0.25 to 0.5)
-        //     newPowerUp = new RedPillPowerUp("test", 1, this, powerUpX, powerUpY);
-            // newPowerUp.setPlayer(player);
-        // } 
+        else if (powerUpType < 0.7) { // 25% chance for Red Pill (0.25 to 0.5)
+            newPowerUp = new RedPillPowerUp("test", 1, this, powerUpX, powerUpY);
+        } 
         else if (powerUpType < 0.9) { // 25% chance for Green Pill (0.5 to 0.75)
-            newPowerUp = new BlueShieldPowerUp("test", 1, this, powerUpX, powerUpY);
-            newPowerUp.setPlayer(player);
+            newPowerUp = new BluePillPowerUp("test", 1, this, powerUpX, powerUpY);
         } 
-        // else { // 25% chance for Yellow Pill (0.75 to 1.0)
-        //     newPowerUp = new YellowBoltPowerUp("test", 1, this, powerUpX, powerUpY);
-        // newPowerUp.setPlayer(player);
-        // }
+        else { // 25% chance for Yellow Pill (0.75 to 1.0)
+            newPowerUp = new YellowBoltPowerUp("test", 1, this, powerUpX, powerUpY);
+        }
+
+        newPowerUp.setPlayer(player);
         System.out.println("PowerUp X: " + powerUpX + ", Y: " + powerUpY);
         if (newPowerUp != null) {
             powerups.add(newPowerUp);
         }
     }
+
+    private void checkForWaterLevelTransition() {
+        if (!hasSwitchedToWater && getElapsedTime() >= 20) {
+            setWaterLevel(true);
+            hasSwitchedToWater = true;
+            
+            // Optional: Play a transition sound
+            soundManager.playClip("water_transition", false);
+        }
+    }
+
     private void checkPowerUpCollisions() {
         List<PowerUp> collectedPowerUps = new LinkedList<>();
         Rectangle2D.Double playerRect = player.getBoundingRectangle();
@@ -728,6 +705,41 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         powerups.removeAll(collectedPowerUps); // Remove collected power-ups
     }
 
+    // Timer methods
+    private void startTimer() {
+        if (!timerRunning) {
+            if (totalPausedTime > 0) {
+                startGameTime += (System.currentTimeMillis() - pausedTime);
+                totalPausedTime = 0;
+            } else {
+                startGameTime = System.currentTimeMillis();
+            }
+            timerRunning = true;
+        }
+    }
+
+    private void pauseTimer() {
+        if (timerRunning) {
+            pausedTime = System.currentTimeMillis();
+            timerRunning = false;
+            totalPausedTime += (pausedTime - startGameTime);
+        }
+    }
+
+    private long getElapsedTime() {
+        if (timerRunning) {
+            return (System.currentTimeMillis() - startGameTime) / 1000;
+        } else {
+            return (pausedTime - startGameTime) / 1000;
+        }
+    }
+
+    private String formatTime(long seconds) {
+        long minutes = seconds / 60;
+        long remainingSeconds = seconds % 60;
+        return String.format("%02d:%02d", minutes, remainingSeconds);
+    }
+
     public List<Enemy> getEnemies(){
         return this.enemies;
     }
@@ -742,6 +754,8 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         isPaused = false; 
 
         createGameEntities();
+        startTimer();
+        initHearts();
         player.debugJump();
 
 
@@ -757,6 +771,74 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
         requestFocusInWindow();
     }
 
+    private void loadLevel(int levelNumber) {
+        try {
+            // Clear existing entities
+            platforms.clear();
+            enemies.clear();
+            powerups.clear();
+            
+            // Load level-specific configuration
+            // loadPlatformsForLevel(levelNumber);
+            // loadEnemiesForLevel(levelNumber);
+            
+            // Reset player position
+            player.setPosition(100, 545);
+            
+            // Play level start sound
+            soundManager.playClip("level_start", false);
+        } catch (Exception e) {
+            gameOver = true; // End game if level loading fails
+        }
+    }
+
+    public void pauseGame() {
+        isPaused = true;
+        pauseTimer();
+    }
+
+    public void resumeGame() {
+        isPaused = false;
+        startTimer();
+    }
+
+
+    public void completeLevel() {
+        currentLevel++;
+        levelChangeNeeded = true;
+        
+        // Optional: Add score bonus for level completion
+        score += 1000 * currentLevel;
+    }
+
+    public void checkLevelCompletion() {
+        if (player.getX() > levelCompletionXPosition) {
+            completeLevel();
+        }
+    }
+
+    public void initHearts() {
+        hearts.clear();
+        int startX = scrWidth - 150; // Right side of screen
+        int y = scrHeight - 40; // Bottom of screen
+        
+        for (int i = 0; i < player.getLives(); i++) {
+            Heart heart = new Heart(this, startX - (i * 30), y);
+            hearts.add(heart);
+        }
+    }
+    
+    public void updateHearts() {
+        hearts.clear();
+        int startX = scrWidth - 150;
+        int y = scrHeight - 40;
+        
+        for (int i = 0; i < player.getLives(); i++) {
+            Heart heart = new Heart(this, startX - (i * 30), y);
+            hearts.add(heart);
+        }
+    }
+
 
     //Key Listener
     @Override
@@ -766,6 +848,14 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
     @Override
     public void keyPressed(KeyEvent e) {
         int key = e.getKeyCode();
+        if (gameOver && showRestartPrompt) {
+            if (e.getKeyCode() == KeyEvent.VK_R) {
+                restartGame();
+            } 
+            else if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                System.exit(0); // Or return to menu
+            }
+        }
         switch(key) {
             case KeyEvent.VK_LEFT:
                 player.movement(4);  // Move left
@@ -782,7 +872,38 @@ public class GamePanel extends JPanel implements KeyListener, Runnable {
             case KeyEvent.VK_DOWN:
                 player.movement(5);  // Duck
             break;
+
+            case KeyEvent.VK_P:
+                if(isPaused) {
+                    resumeGame();
+                } else {
+                    pauseGame();
+                }
+            break;
         }
+    }
+
+    private void restartGame() {
+        // Reset game state
+        gameOver = false;
+        score = 0;
+        currentLevel = 1;
+        hasSwitchedToWater = false;
+        
+        // Clear all entities
+        platforms.clear();
+        enemies.clear();
+        powerups.clear();
+        
+        // Reset player
+        player = new Player(100, 545, platforms);
+        initHearts();
+        
+        // Reset background
+        setWaterLevel(false);
+        
+        // Restart game loop
+        startGame();
     }
 
     @Override

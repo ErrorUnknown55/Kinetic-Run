@@ -2,6 +2,7 @@ import java.awt.Graphics2D;
 import java.awt.Color;
 import java.awt.Image;
 import java.awt.geom.Rectangle2D;
+import java.util.ArrayList;
 import java.util.List;
 import java.awt.image.BufferedImage;
 
@@ -28,6 +29,8 @@ public class Player {
     // Player Animation Sequence
     private Image[] walkImages = new Image[5];
     private Image[] swimImages = new Image[2];
+    private Image[] swimRight = new Image[2];
+    private Image[] swimDown = new Image[2];
     private Image[] jumpImages = new Image[3];
 
     // Player Images
@@ -56,6 +59,22 @@ public class Player {
     private boolean shieldActive = false;
     private long shieldEndTime;
 
+    // Animation control variables
+    private int animationFrame = 0;
+    private long lastFrameTime = 0;
+    private final int ANIMATION_DELAY = 150;
+
+    //to control player speed
+    private int originalSpeed;
+    private int currentSpeed;
+    private long speedBoostEndTime;
+    private boolean isSpeedBoosted = false;
+
+    private boolean isInWater = false;
+    
+    private int lives = 3; // Starting lives
+    private List<Heart> hearts = new ArrayList<>();
+
     public Player(int x, int y, List<PlatformGen> plf) {
         // Player position
         this.pX = x;
@@ -83,6 +102,14 @@ public class Player {
         for(int i = 0; i < swimImages.length; i++)
             swimImages[i] = ImageManager.loadImage("images/player/PlayerBlue/playerBlue_swim"+ (i+1)+".png");
 
+        // Load player Swim right Animation Sequence
+        for(int i = 0; i < swimRight.length; i++)
+            swimRight[i] = ImageManager.loadImage("images/player/PlayerBlue/swimright_"+ (i+1)+".png");
+
+        // Load player Swim down Animation Sequence
+        for(int i = 0; i < swimDown.length; i++)
+            swimDown[i] = ImageManager.loadImage("images/player/PlayerBlue/swimdown_"+ (i+1)+".png");
+
         // Initialize platforms
         this.platforms = plf;
 
@@ -92,6 +119,14 @@ public class Player {
         
         currentBaseImage = ImageManager.toBufferedImage(standImage);
 
+        this.originalSpeed = pSpeed; // Store original speed
+        this.currentSpeed = pSpeed;
+
+    }
+
+    public void setPosition(int x, int y){
+        this.pX = x;
+        this.pY = y;
     }
 
     public int getX() {
@@ -110,6 +145,29 @@ public class Player {
         return pHeight;
     }
 
+    public int getLives() {
+        return lives;
+    }
+    
+    public void setLives(int lives) {
+        this.lives = lives;
+    }
+    
+    public void addLife() {
+        if (lives < 5) { // Max 5 lives
+            lives++;
+        }
+    }
+    
+    public void loseLife() {
+        lives--;
+        if (lives < 0) lives = 0;
+    }
+    
+    public boolean isDead() {
+        return lives <= 0;
+    }
+
     public void activateShield(long duration) {
         this.shieldActive = true;
         this.shieldEndTime = System.currentTimeMillis() + duration;
@@ -122,12 +180,46 @@ public class Player {
             this.isInvincible = false;
         }
     }
+
+    public void increaseSpeed(float multiplier, long duration) {
+        if (!isSpeedBoosted) {
+            this.originalSpeed = pSpeed; // Store original speed if not already boosted
+        }
+        this.currentSpeed = (int) Math.round(originalSpeed * multiplier);
+        this.pSpeed = currentSpeed;
+        this.speedBoostEndTime = System.currentTimeMillis() + duration;
+        this.isSpeedBoosted = true;
+        
+        // Optional: Add visual effect or sound
+
+        // SoundManager.getInstance().playClip("powerup", false);
+    }
     
     public boolean hasShield() {
         return shieldActive && System.currentTimeMillis() < shieldEndTime;
     }
 
     public void update() {
+
+        if (isInWater) {
+            // Apply small buoyancy force when not actively swimming up
+            if (currentDirection != 5) {
+                verticalVelocity -= 0.05f; // Small upward force
+            }
+            
+            // Apply water resistance
+            verticalVelocity *= 0.95f;
+            
+            // Update position
+            pY += verticalVelocity;
+            
+            // Keep within vertical bounds
+            if (pY < 0) pY = 0;
+            if (pY > 548) {
+                pY = 548;
+                verticalVelocity = 0;
+            }
+        }
 
         if (shieldActive && System.currentTimeMillis() > shieldEndTime) {
             shieldActive = false;
@@ -140,16 +232,13 @@ public class Player {
             pY += verticalVelocity;
         }
 
+        // Check if speed boost has expired
+        if (isSpeedBoosted && System.currentTimeMillis() > speedBoostEndTime) {
+            resetSpeed();
+        }
+
         //Prevent falling through the buttom
         PlatformGen collision = collideWithPlatform();
-        // if(pY > 548 ) {//Ground level
-        //     pY = 548;
-        //     isOnGround = true;
-        //     verticalVelocity = 0;
-        // }
-        // if(collision!=null){
-        //     pY = collision.getY() - getHeight();
-        // }
         // Handle collision with platforms
         if (collision != null) {
             // If we are falling onto a platform
@@ -202,32 +291,32 @@ public class Player {
         }
     }
 
-    // Draw the player with appropriate image based on movement
-    // public void draw(Graphics2D g2d) {
-    //     Image currentImage = standImage; // Default standing image
-    //     //Image currentImage = getCurrentImage();
+    public void setWaterLevel(boolean inWater) {
+        this.isInWater = inWater;
         
-    //     // Check movement direction and select appropriate image
-    //     switch(currentDirection) {
-    //         case 4: // Left
-    //         case 6: // Right
-    //             // Animate walking
-    //             // currentImage = walkImages[walkFrame];
-    //             soundManager.playClip("walk", true);
-    //             break;
-    //         case 5: // Duck
-    //             // currentImage = duckImage;
-    //             break;
-    //         case 8: // Jump
-    //             // currentImage = jumpImages[0]; // Use first jump frame
-    //             break;
-    //         default:
-    //             // currentImage = standImage;
-    //             soundManager.stopClip("walk");
-    //     }
-        
-    //     g2d.drawImage(currentImage, pX, pY, pWidth, pHeight, null);
-    // }
+        if (inWater) {
+            
+            // Adjust physics for water
+            this.gravity = 0.1f; // Reduced gravity in water
+            this.jumpForce = 0; // Reduced jump in water
+            this.verticalVelocity = 0;
+            this.isJumping = false;
+        } else {
+            // Revert to land physics
+            this.gravity = 0.5f;
+            this.jumpForce = -12f;
+        }
+    }
+
+    private void resetSpeed() {
+        this.pSpeed = originalSpeed;
+        this.currentSpeed = originalSpeed;
+        this.isSpeedBoosted = false;
+    }
+
+    public boolean isSpeedBoosted() {
+        return isSpeedBoosted;
+    }
 
     private void endFlash() {
         isFlashingRed = false;
@@ -263,22 +352,61 @@ public class Player {
     }
 
     public void draw(Graphics2D g2d) {
-        if (!isFlashingRed) {
-            switch (currentDirection) {
-                case 4: case 6: currentBaseImage = ImageManager.toBufferedImage(walkImages[walkFrame]);
-                soundManager.playClip("walk", true); break;
-                case 5: currentBaseImage = ImageManager.toBufferedImage(duckImage); break;
-                case 8: currentBaseImage = ImageManager.toBufferedImage(jumpImages[0]); break;
-                default: currentBaseImage = ImageManager.toBufferedImage(standImage); 
-                soundManager.stopClip("walk");break;
+        Image currentImage;
+        if (isInWater) {
+            
+
+            // Update swim animation
+            updateWaterAnimation();
+        
+            // Determine which swim animation to use
+            if (currentDirection == 6) { // Right
+                int swimFrame = animationFrame % swimRight.length;
+                currentImage = swimImages[swimFrame];
+            } 
+            else if(currentDirection == 4) { // Left or neutral
+                int swimFrame = animationFrame % swimImages.length;
+                currentImage = swimRight[swimFrame];
+            }
+
+            else if (currentDirection == 5) { // Down
+                int swimFrame = animationFrame % swimDown.length;
+                currentImage = swimDown[swimFrame];
+            }
+
+            else{
+                int swimFrame = animationFrame % swimRight.length;
+                currentImage = swimImages[swimFrame];
+            }
+            
+            // Apply red tint if needed
+            if (isFlashingRed && redTinted) {
+                currentImage = redTintEffect.apply(ImageManager.toBufferedImage(currentImage));
+            }
+
+            if (!isInvincible || (System.currentTimeMillis() % 200) < 100) {
+                g2d.drawImage(currentImage, pX, pY, pWidth, pHeight, null);
             }
         }
-    
-        Image currentImage = getCurrentImage();
-        if (!isInvincible || (System.currentTimeMillis() % 200) < 100) {
-            g2d.drawImage(currentImage, pX, pY, pWidth, pHeight, null);
-        }
+
+        else{
+            if (!isFlashingRed) {
+                switch (currentDirection) {
+                    case 4: case 6: currentBaseImage = ImageManager.toBufferedImage(walkImages[walkFrame]);
+                    soundManager.playClip("walk", true); break;
+                    case 5: currentBaseImage = ImageManager.toBufferedImage(duckImage); break;
+                    case 8: currentBaseImage = ImageManager.toBufferedImage(jumpImages[0]); break;
+                    default: currentBaseImage = ImageManager.toBufferedImage(standImage); 
+                    soundManager.stopClip("walk");break;
+                }
+            }
         
+            currentImage = getCurrentImage();
+            if (!isInvincible || (System.currentTimeMillis() % 200) < 100) {
+                g2d.drawImage(currentImage, pX, pY, pWidth, pHeight, null);
+            }
+            
+        }
         // Optional: Draw an outline when invincible
         if (isInvincible) {
             g2d.setColor(new Color(255, 255, 255, 100)); // Semi-transparent white
@@ -286,9 +414,28 @@ public class Player {
         }
         // g2d.drawImage(currentImage, pX, pY, pWidth, pHeight, null);
         if (hasShield()) {
-            g2d.setColor(new Color(100, 100, 255, 100)); // Semi-transparent blue
+            if (isInWater) {
+                g2d.setColor(new Color(0, 0, 80, 150)); // Darker blue underwater
+            } else {
+                g2d.setColor(new Color(100, 100, 255, 100)); // Original light blue
+            }
             g2d.fillOval(pX - 5, pY - 5, pWidth + 10, pHeight + 10);
         }
+
+        if (isSpeedBoosted) {
+            if (isInWater) {
+                g2d.setColor(new Color(150, 150, 0, 120)); // Darker yellow underwater
+            } else {
+                g2d.setColor(new Color(255, 255, 0, 100)); // Original bright yellow
+            }
+            g2d.fillOval(pX - 5, pY - 5, pWidth + 10, pHeight + 10);
+        }
+
+        
+    }
+
+    public boolean isInWater() {
+        return isInWater;
     }
 
     // Control the player movement
@@ -297,46 +444,97 @@ public class Player {
 
         System.out.println("PX: "+pX+ " PY: "+pY);
         
-        if(dir == 8 && isOnGround) { // Player jump
-            verticalVelocity =  jumpForce;
-            isOnGround = false;
-            soundManager.playClip("jump", false);
-            isJumping = true;
-            //pY -= pSpeed;
-            // Prevents the player from moving out of the screen
-            if (pY < 0)
-                pY = 0;
-        } else if(dir == 5) { //Player Duck
-            //pY += pSpeed;
-            // Prevents the player from moving out of the screen
-            //if(pY > (400 - pHeight))
-            //    pY = 400 - pHeight;
-
-        } else if(dir == 4) { // Move the player Left
-            pX -= pSpeed;
-            
-            // Prevents the player from moving out of the screen
-            if (pX < 10)
-                 pX = 10;
-            PlatformGen collision = collideWithPlatform();
-            if(collision != null){
-                pX = collision.getX() + collision.getWidth();
+        if (isInWater) {
+            // Water movement - no jumping, free movement
+            if (dir == 4) { // Left
+                pX -= pSpeed;
+                if (pX < 10) pX = 10;
+                PlatformGen collision = collideWithPlatform();
+                if (collision != null) {
+                    pX = collision.getX() + collision.getWidth();
+                }
+                updateWaterAnimation();
+            } 
+            else if (dir == 6) { // Right
+                pX += pSpeed;
+                if (pX > (880 - pWidth)) pX = 880 - pWidth;
+                PlatformGen collision = collideWithPlatform();
+                if (collision != null) {
+                    pX = collision.getX();
+                }
+                updateWaterAnimation();
             }
-            updateWalkAnimation();
-        } else if(dir == 6) { // Move the player Right
-            pX += pSpeed;
-            
-            // Prevents the player from moving out of the screen
-            if (pX > (880 - pWidth))
-                pX = 880 - pWidth;
-            PlatformGen collision = collideWithPlatform();
-            if(collision != null){
-                pX = collision.getX();
+            // Disable jump in water
+            else if (dir == 8) {
+                // Optional: Could implement swim-up animation here
+                pY -= pSpeed;
+                if(pY < 0){
+                    pY =0;
+                }
+                verticalVelocity = -3f; // Constant upward speed in water
+                updateWaterAnimation();
             }
-            updateWalkAnimation();
-        } else {
-            // No movement - reset walk animation
-            walkFrame = 0;
+            else if (dir == 5) { // Swim down
+                // Apply small downward force
+                verticalVelocity = 3f; // Slow sinking when pressing down
+                updateWaterAnimation();
+            }
+            else {
+                // No vertical movement key pressed - slow sinking
+                verticalVelocity = 1.25f; // Natural slow sinking in water
+            }
+            // Apply water resistance (damping) to vertical movement
+            verticalVelocity *= 0.9f;
+            
+            // Update position based on velocity
+            pY += verticalVelocity;
+            
+            // Keep player within screen bounds
+            if (pY < 0) pY = 0;
+            if (pY > 548) pY = 548;
+        }
+        else{
+            if(dir == 8 && isOnGround) { // Player jump
+                verticalVelocity =  jumpForce;
+                isOnGround = false;
+                soundManager.playClip("jump", false);
+                isJumping = true;
+                //pY -= pSpeed;
+                // Prevents the player from moving out of the screen
+                if (pY < 0)
+                    pY = 0;
+            } else if(dir == 5) { //Player Duck
+                //pY += pSpeed;
+                // Prevents the player from moving out of the screen
+                //if(pY > (400 - pHeight))
+                //    pY = 400 - pHeight;
+    
+            } else if(dir == 4) { // Move the player Left
+                pX -= pSpeed;
+                
+                // Prevents the player from moving out of the screen
+                if (pX < 10)
+                     pX = 10;
+                PlatformGen collision = collideWithPlatform();
+                if(collision != null){
+                    pX = collision.getX() + collision.getWidth();
+                }
+                updateWalkAnimation();
+            } else if(dir == 6) { // Move the player Right
+                pX += pSpeed;
+                
+                // Prevents the player from moving out of the screen
+                if (pX > (880 - pWidth))
+                    pX = 880 - pWidth;
+                PlatformGen collision = collideWithPlatform();
+                if(collision != null){
+                    pX = collision.getX();
+                }
+                updateWalkAnimation();
+            } else {
+                // No movement - reset walk animation
+                walkFrame = 0;
+            }
         }
     }
 
@@ -349,6 +547,14 @@ public class Player {
             }
         }
         return null;
+    }
+
+    private void updateWaterAnimation() {
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastFrameTime > ANIMATION_DELAY) {
+            animationFrame++;
+            lastFrameTime = currentTime;
+        }
     }
 
     // Update walk animation frames

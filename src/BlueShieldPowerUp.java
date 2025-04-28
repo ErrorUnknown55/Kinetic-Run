@@ -1,5 +1,6 @@
 import java.awt.Graphics2D;
 import java.awt.Graphics;
+import java.awt.Color;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.geom.Line2D;
@@ -60,6 +61,14 @@ public class BlueShieldPowerUp extends PowerUp{
     }
     public void draw(Graphics g2d){
         g2d.drawImage(blueS, x, y, width, height, null);
+        if (player.isInWater()) {
+            // Darker outline for underwater (e.g., navy blue or dark gray)
+            g2d.setColor(new Color(0, 0, 100, 150)); // Semi-transparent dark blue
+        } else {
+            // Normal outline for above water
+            g2d.setColor(new Color(255, 255, 255, 150)); // Semi-transparent white
+        }
+        g2d.fillOval(x-5, y-5, width+10, height+10);
     }
     public Rectangle2D.Double getBoundingRectangle() {
         return new Rectangle2D.Double(x, y, width, height);

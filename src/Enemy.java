@@ -5,6 +5,8 @@ import java.awt.Point;
 import java.awt.geom.Rectangle2D;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
+
 import javax.swing.JPanel;
 import java.awt.Dimension;
 
@@ -40,6 +42,9 @@ public class Enemy {
     private Image[] flyingAltImages = new Image[4];
     private Image[] spikeyImages = new Image[4];
     private Image[] swimmingImages = new Image[4];
+    private Image[] swimmingImages_right = new Image[4];
+    private Image[] swimmingImages_up = new Image[4];
+    private Image[] swimmingImages_down = new Image[4];
     private Image[] walkingImages = new Image[1]; // Only one walking image provided
 
     private List<Projectile> projectiles;
@@ -58,6 +63,7 @@ public class Enemy {
     private boolean isFrozen = false;
     private int frozenSpeed = 0; // When frozen
 
+    private boolean isInWater = false;
     
 
     public Enemy(int x, int y, int type, JPanel panel, Player player) {
@@ -141,9 +147,39 @@ public class Enemy {
         for(int i = 0; i < swimmingImages.length; i++)
             swimmingImages[i] = ImageManager.loadImage("images/enemies/enemySwimming_"+(i+1)+".png");
 
+        for(int i = 0; i < swimmingImages_right.length; i++)
+            swimmingImages_right[i] = ImageManager.loadImage("images/enemies/esr_"+(i+1)+".png");
+
+        for(int i = 0; i < swimmingImages_up.length; i++)
+            swimmingImages_up[i] = ImageManager.loadImage("images/enemies/esup_"+(i+1)+".png");
+
+        for(int i = 0; i < swimmingImages_down.length; i++)
+            swimmingImages_down[i] = ImageManager.loadImage("images/enemies/esdown_"+(i+1)+".png");
+
+
+
         // Load Walking Enemy Image (only one image provided)
         walkingImages[0] = ImageManager.loadImage("images/enemies/enemyWalking_1.png");
     }
+
+    public void setWaterLevel(boolean inWater) {
+        this.isInWater = inWater;
+        loadEnemyImages();
+        
+        if (inWater) {
+            // Change enemy behavior in water
+            if (currentType == 0 || currentType == 1 || currentType == 2 || currentType == 3) {
+                Random random = new Random();
+                currentType = 4 + random.nextInt(4); // Generates 4, 5, 6, or 7
+            } else {
+                currentType = 0; // Floating type
+            }
+            
+            // Adjust movement for water
+            this.eSpeed = 9; // Slower movement in water
+        }
+    }
+
     public void setX(int x){
         this.eX = x;
     }
@@ -182,6 +218,10 @@ public class Enemy {
         }
     }
 
+    public int getType(){
+        return this.currentType;
+    }
+
     private Image getCurrentImage() {
         switch(currentType) {
             case 0: // Floating
@@ -194,7 +234,13 @@ public class Enemy {
                 return spikeyImages[animationFrame];
             case 4: // Swimming
                 return swimmingImages[animationFrame];
-            case 5: // Walking
+            case 5: // Swimming right
+                return swimmingImages_right[animationFrame];
+            case 6: // Swimming up
+                return swimmingImages_up[animationFrame];
+            case 7: // Swimming down
+                return swimmingImages_down[animationFrame];
+            case 8: // Walking
                 return walkingImages[0]; // Only one image available
             default:
                 return floatingImages[animationFrame];
@@ -207,6 +253,15 @@ public class Enemy {
         long elapsedTime = currentTime - startTime;
 
         if (isFrozen) return; // Skip movement if frozen
+
+        if (isInWater) {
+            // Special water movement patterns
+            if (currentType == 4) { // Swimming enemy
+                verticalMotion.setAmplitudeFactor(100); // More vertical movement
+                verticalMotion.setFrequencyFactor(0.8); // Slower oscillation
+            }
+            // ... rest of water-specific logic
+        }
         
 
         if (currentType == 1 || currentType == 2) { // Only move flying types
@@ -286,6 +341,19 @@ public class Enemy {
             }
             // Spikey enemies do not shoot projectiles
             updateAnimation(); // Still animate the spikey enemy
+
+        } else if(currentType == 4){
+            eX += eSpeed;
+            updateAnimation();
+        } else if(currentType == 5){
+            eX -= eSpeed;
+            updateAnimation();
+        } else if(currentType == 6){
+            eY -= eSpeed;
+            updateAnimation();
+        } else if(currentType == 7){
+            eY += eSpeed;
+            updateAnimation();
         } else {
             // Default horizontal movement for other enemy types
             eX -= eSpeed;

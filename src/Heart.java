@@ -2,54 +2,37 @@ import java.awt.Graphics2D;
 import java.awt.Graphics;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Rectangle2D;
+import java.awt.Color;
 import java.awt.geom.Line2D;
 import javax.swing.JPanel;
 import java.util.Random;
 import java.awt.Image;
 import java.util.ArrayList;
 import java.awt.image.BufferedImage;
-public class YellowBoltPowerUp extends PowerUp {
-    private Image yellowB;
+public class Heart {
+    private Image heart;
     private int x,y,width,height,dx;
     private JPanel jp;
+    private GamePanel gp;
     private Player player;
-    private float speedMultiplier = 3.5f; // How much to multiply the speed
-    private long duration = 5000;
 
-    public YellowBoltPowerUp(String effect, float duration,JPanel p, int x, int y) {
-        super(effect, duration);
-
+    public Heart(JPanel p, int x, int y){
         this.x = x;
         this.y=y;
         width = 22;
         height = 21;
         dx = 6;
         jp=p;
+        this.gp = (GamePanel) p;
 
-        yellowB = ImageManager.loadImage("images/powerups/bolt_gold.png");
-
-    }
-
-    public void applyEffect() {
-        //implement function;
-        if(player != null){
-            player.increaseSpeed(speedMultiplier,duration);
-        }
+        heart = ImageManager.loadImage("images/player/heart.png");
     }
     public void setPlayer(Player p){
         this.player = p;
     }
-
-    public void update(){
-        if (!jp.isVisible()) return;
-
-        x = x - dx;
-    }
     public void draw(Graphics g2d){
-        g2d.drawImage(yellowB, x, y, width, height, null);
-    }
-    public Rectangle2D.Double getBoundingRectangle() {
-        return new Rectangle2D.Double(x, y, width, height);
+        g2d.drawImage(heart, x, y, width, height, null);
+        
     }
     public int getX(){
         return this.x;

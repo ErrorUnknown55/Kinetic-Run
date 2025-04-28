@@ -81,7 +81,14 @@ public class BluePillPowerUp extends PowerUp {
     }
     public void draw(Graphics g2d){
         g2d.drawImage(blueP, x, y, width, height, null);
-        g2d.setColor(new Color(255, 255, 255, 100));
+        if (player.isInWater()) {
+            // Darker outline for underwater (e.g., navy blue or dark gray)
+            g2d.setColor(new Color(0, 0, 100, 150)); // Semi-transparent dark blue
+        } else {
+            // Normal outline for above water
+            g2d.setColor(new Color(255, 255, 255, 150)); // Semi-transparent white
+        }
+        // g2d.setColor(new Color(255, 255, 255, 100));
         g2d.fillOval(x-5, y-5, width+10, height+10);
     }
     public Rectangle2D.Double getBoundingRectangle() {
